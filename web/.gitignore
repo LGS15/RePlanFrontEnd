@@ -22,3 +22,23 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Node modules and dependency directories
+node_modules/
+
+# Build output directories
+build/
+dist/
+
+
+
+# Environment variables
+.env
+
+# IDE and editor settings
+.vscode/
+.idea/
+
+
+
+
