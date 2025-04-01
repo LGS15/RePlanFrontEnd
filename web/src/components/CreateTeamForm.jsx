@@ -7,63 +7,138 @@ const CreateTeamForm = () => {
     const [ownerId, setOwnerId] = useState('');
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Predefined game options
+    const gameOptions = [
+        { value: '', label: 'Select a game' },
+        { value: 'league-of-legends', label: 'League of Legends' },
+        { value: 'valorant', label: 'Valorant' },
+        { value: 'csgo', label: 'CS:GO' },
+        { value: 'dota2', label: 'Dota 2' },
+        { value: 'overwatch', label: 'Overwatch' },
+        { value: 'rocket-league', label: 'Rocket League' },
+        { value: 'fortnite', label: 'Fortnite' },
+        { value: 'apex-legends', label: 'Apex Legends' },
+        { value: 'other', label: 'Other' }
+    ];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         try {
             const teamData = { teamName, gameName, ownerId };
             const createdTeam = await createTeam(teamData);
             setResult(createdTeam);
             setError(null);
+
+
         } catch (err) {
-            setError(err.response?.data?.message || 'Error creating team');
+            setError(err.response?.data?.message || 'There seems to have been an error. Please try again later.');
             setResult(null);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <div className="p-4">
-            <h2 className="text-2xl font-bold mb-4">Create Team</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label className="block mb-1">Team Name:</label>
-                    <input
-                        className="border p-2 rounded w-full"
-                        value={teamName}
-                        onChange={(e) => setTeamName(e.target.value)}
-                    />
+        <div className="p-6 md:p-8">
+            <h2 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">Create New Team</h2>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Team Name Field */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Team Name</label>
+                        <input
+                            type="text"
+                            value={teamName}
+                            onChange={(e) => setTeamName(e.target.value)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                            placeholder="Enter team name"
+                            required
+                        />
+                    </div>
+
+                    {/* Game Selection */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Game</label>
+                        <select
+                            value={gameName}
+                            onChange={(e) => setGameName(e.target.value)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                            required
+                        >
+                            {gameOptions.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
+
+                {/* Owner ID Field */}
                 <div>
-                    <label className="block mb-1">Game Name:</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Owner ID</label>
                     <input
-                        className="border p-2 rounded w-full"
-                        value={gameName}
-                        onChange={(e) => setGameName(e.target.value)}
-                    />
-                </div>
-                <div>
-                    <label className="block mb-1">Owner ID:</label>
-                    <input
-                        className="border p-2 rounded w-full"
+                        type="text"
                         value={ownerId}
                         onChange={(e) => setOwnerId(e.target.value)}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
+                        placeholder="Enter owner ID"
+                        required
                     />
+                    <p className="mt-1 text-xs text-gray-400">This will be used to identify the team creator</p>
                 </div>
-                <button
-                    type="submit"
-                    className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                >
-                    Create Team
-                </button>
+
+
+
+                {/* Submit Button */}
+                <div>
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className={`w-full px-6 py-3 bg-gradient-to-r from-pink-600 to-red-600 text-white font-medium rounded-lg shadow-lg hover:from-pink-700 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition duration-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    >
+                        {isLoading ? (
+                            <span className="flex items-center justify-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Creating...
+                            </span>
+                        ) : 'Create Team'}
+                    </button>
+                </div>
             </form>
+
+            {/* Success Message */}
             {result && (
-                <div className="mt-4 p-2 border border-green-500 text-green-700">
-                    Team created: {result.teamName} (ID: {result.teamId})
+                <div className="mt-6 p-4 bg-green-900/30 border border-green-700 rounded-lg text-green-400 animate-fade-in">
+                    <div className="flex">
+                        <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                            <p className="font-medium">Team created successfully!</p>
+                            <p className="text-sm mt-1">Team: {result.teamName} (ID: {result.teamId})</p>
+                        </div>
+                    </div>
                 </div>
             )}
+
+            {/* Error Message */}
             {error && (
-                <div className="mt-4 p-2 border border-red-500 text-red-700">
-                    {error}
+                <div className="mt-6 p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-400 animate-fade-in">
+                    <div className="flex">
+                        <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                            <p className="font-medium">Error creating team</p>
+                            <p className="text-sm mt-1">{error}</p>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
