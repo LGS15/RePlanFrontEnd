@@ -19,3 +19,8 @@ export const addTeamMember = async (teamId, memberData) => {
     return response.data;
 }
 
+export const getTeamsForOwner = async (ownerId) => {
+    const response = await axiosInstance.get(`/teams/owner/${ownerId}`);
+    return response.data;
+}
+
