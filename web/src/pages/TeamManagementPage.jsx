@@ -13,7 +13,7 @@ const TeamManagementPage = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
-                            <Link to="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">
+                            <Link to="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-pink-500">
                                 Team Sync
                             </Link>
                         </div>
@@ -33,7 +33,7 @@ const TeamManagementPage = () => {
                 {/* Page Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">
+                        <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-pink-500">
                             Team Management
                         </h1>
                         <p className="text-gray-400 mt-2">Create and manage your esports teams</p>
