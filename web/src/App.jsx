@@ -10,6 +10,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/team-management" element={<TeamManagementPage />} />
+                <Route path="/team/:teamId" element={<TeamPage />} />
             </Routes>
         </Router>
     )
