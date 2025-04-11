@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getTeamsForOwner } from '../services/TeamService.js';
+import { Link } from 'react-router-dom';
+import { getTeamsByOwner } from '../services/TeamService.js'; // Fixed function name
 
 const OwnedTeamsList = () => {
     const [teams, setTeams] = useState([]);
@@ -14,10 +15,11 @@ const OwnedTeamsList = () => {
 
         setIsLoading(true);
         try {
-            const teamsData = await getTeamsForOwner(ownerId);
+            const teamsData = await getTeamsByOwner(ownerId);
             setTeams(teamsData);
             setError(null);
         } catch (err) {
+            console.error('Error fetching teams:', err);
             setError(err.response?.data?.message || 'Error fetching teams');
             setTeams([]);
         } finally {
@@ -34,28 +36,12 @@ const OwnedTeamsList = () => {
         setExpandedTeamId(expandedTeamId === teamId ? null : teamId);
     };
 
-    // Get role badge color
-    const getRoleBadgeClass = (role) => {
-        switch (role) {
-            case 'Owner':
-                return 'bg-purple-600/70 text-purple-100';
-            case 'Coach':
-                return 'bg-blue-600/70 text-blue-100';
-            case 'Player':
-                return 'bg-green-600/70 text-green-100';
-            default:
-                return 'bg-gray-600/70 text-gray-100';
-        }
-    };
-
-    // Temp data till I set up the DB
-
+    // Fetch teams when ownerId changes
     useEffect(() => {
         if (ownerId) {
             fetchTeams();
         }
     }, [ownerId]);
-
 
     return (
         <div className="p-6 md:p-8">
@@ -100,19 +86,47 @@ const OwnedTeamsList = () => {
                     teams.map((team) => (
                         <div key={team.teamId} className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-pink-500/50 transition duration-200">
                             {/* Team-Header */}
-                            <div
-                                className="px-6 py-4 cursor-pointer flex justify-between items-center"
-                                onClick={() => toggleTeamDetails(team.teamId)}
-                            >
-                                <div>
-                                    <h3 className="text-xl font-bold text-white">{team.teamName}</h3>
-                                    <p className="text-gray-400">{team.gameName}</p>
+                            <div className="flex justify-between items-center">
+                                <div
+                                    className="px-6 py-4 cursor-pointer flex-grow flex items-center"
+                                    onClick={() => toggleTeamDetails(team.teamId)}
+                                >
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">{team.teamName}</h3>
+                                        <p className="text-gray-400">{team.gameName}</p>
+                                    </div>
+                                    <div className="flex items-center ml-auto">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${expandedTeamId === team.teamId ? 'transform rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
                                 </div>
-
+                                <div className="pr-6">
+                                    <Link
+                                        to={`/team/${team.teamId}`}
+                                        state={{ teamData: {
+                                                ...team,
+                                                // Initialize with empty members array for the team page
+                                                members: []
+                                            }}}
+                                        className="px-4 py-2 bg-pink-600 text-white text-sm rounded-lg hover:bg-pink-700 transition duration-200"
+                                    >
+                                        View Team
+                                    </Link>
+                                </div>
                             </div>
 
-                            {/* Team-Details */}
-
+                            {/* Team-Details (expanded view) */}
+                            {expandedTeamId === team.teamId && (
+                                <div className="px-6 py-4 bg-gray-800 border-t border-gray-700">
+                                    <h4 className="font-semibold text-gray-300 mb-2">Team Details</h4>
+                                    <div className="space-y-2 text-gray-300">
+                                        <p><span className="font-medium text-gray-400">Team ID:</span> {team.teamId}</p>
+                                        <p><span className="font-medium text-gray-400">Game:</span> {team.gameName}</p>
+                                        <p><span className="font-medium text-gray-400">Owner:</span> {team.ownerId}</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))
                 ) : (

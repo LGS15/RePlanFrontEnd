@@ -1,26 +1,33 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080';
-
-const axiosInstance = axios.create({
-    baseURL : API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
-
-export const createTeam = async (teamData) => {
-    const response = await axiosInstance.post('/teams', teamData);
-    return response.data;
-}
+const API_URL = 'http://localhost:8080';
 
 export const addTeamMember = async (teamId, memberData) => {
-    const response = await axiosInstance.post(`/teams/${teamId}/members`, memberData);
-    return response.data;
-}
+    try {
+        const response = await axios.post(`${API_URL}/teams/${teamId}/members`, memberData);
+        return response.data;
+    } catch (error) {
+        console.error('Error adding team member:', error);
+        throw error;
+    }
+};
 
-export const getTeamsForOwner = async (ownerId) => {
-    const response = await axiosInstance.get(`/teams/owner/${ownerId}`);
-    return response.data;
-}
+export const getTeamsByOwner = async (ownerId) => {
+    try {
+        const response = await axios.get(`${API_URL}/teams/owner/${ownerId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching teams by owner:', error);
+        throw error;
+    }
+};
 
+export const createTeam = async (teamData) => {
+    try {
+        const response = await axios.post(`${API_URL}/teams`, teamData);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating team:', error);
+        throw error;
+    }
+};
