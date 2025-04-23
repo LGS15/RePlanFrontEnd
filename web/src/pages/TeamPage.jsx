@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, Link, Navigate } from 'react-router-dom';
-import { addTeamMember } from '../services/TeamService.js';
+import { addTeamMember, getTeamMembers } from '../services/TeamService.js';
 
 const TeamPage = () => {
     const { teamId } = useParams();
@@ -10,15 +10,36 @@ const TeamPage = () => {
     // Hooks
     const [team, setTeam] = useState(teamDataFromState || null);
     const [userId, setUserId] = useState('');
-    const [role, setRole] = useState('Player');
+    const [role, setRole] = useState('PLAYER');
     const [isAdding, setIsAdding] = useState(false);
     const [addError, setAddError] = useState(null);
     const [addSuccess, setAddSuccess] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     // No team data, redirect to team management
     if (!team) {
         return <Navigate to="/team-management" replace />;
     }
+
+    // Fetch team members when component mounts
+    useEffect(() => {
+        const fetchTeamMembers = async () => {
+            try {
+                setIsLoading(true);
+                const response = await getTeamMembers(teamId);
+                setTeam({
+                    ...team,
+                    members: response.members || []
+                });
+            } catch (err) {
+                console.error("Error fetching team members:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchTeamMembers();
+    }, [teamId]);
 
     const handleAddMember = async (e) => {
         e.preventDefault();
@@ -32,7 +53,7 @@ const TeamPage = () => {
 
             // Update local state to include the new member
             const newMember = {
-                id: result.id || `temp-${Date.now()}`, // Fallback ID if not returned from API
+                teamMemberId: result.teamMemberId,
                 teamId,
                 userId,
                 role
@@ -45,7 +66,7 @@ const TeamPage = () => {
 
             setAddSuccess(true);
             setUserId('');
-            setRole('Player');
+            setRole('PLAYER');
         } catch (err) {
             setAddError(err.response?.data?.message || "Error adding team member");
         } finally {
@@ -56,11 +77,11 @@ const TeamPage = () => {
     // Get role badge color
     const getRoleBadgeClass = (role) => {
         switch (role) {
-            case 'Owner':
+            case 'OWNER':
                 return 'bg-purple-600/70 text-purple-100';
-            case 'Coach':
+            case 'COACH':
                 return 'bg-blue-600/70 text-blue-100';
-            case 'Player':
+            case 'PLAYER':
                 return 'bg-green-600/70 text-green-100';
             default:
                 return 'bg-gray-600/70 text-gray-100';
@@ -69,25 +90,20 @@ const TeamPage = () => {
 
     return (
         <div className="min-h-screen bg-gray-900 text-white">
-            {/* Navigation Bar */}
-            <nav className="bg-gray-900/80 backdrop-blur-md sticky top-0 w-full z-50 border-b border-pink-500/20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center">
-                            <Link to="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">
-                                Team Sync
-                            </Link>
-                        </div>
-                        <div className="hidden md:flex items-center space-x-4">
-                            <Link to="/team-management" className="px-3 py-2 text-gray-300 hover:text-white transition">
-                                Back to Teams
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
             <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+                {/* Back button */}
+                <div className="mb-4">
+                    <Link
+                        to="/team-management"
+                        className="inline-flex items-center text-gray-300 hover:text-white transition"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                        </svg>
+                        Back to Teams
+                    </Link>
+                </div>
+
                 {/* Team Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">
@@ -104,7 +120,14 @@ const TeamPage = () => {
                                 <h2 className="text-xl font-bold">Team Members</h2>
                             </div>
                             <div className="p-6">
-                                {team.members && team.members.length > 0 ? (
+                                {isLoading ? (
+                                    <div className="flex justify-center py-8">
+                                        <svg className="animate-spin h-8 w-8 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                ) : team.members && team.members.length > 0 ? (
                                     <div className="overflow-x-auto">
                                         <table className="min-w-full divide-y divide-gray-700">
                                             <thead>
@@ -115,7 +138,7 @@ const TeamPage = () => {
                                             </thead>
                                             <tbody className="divide-y divide-gray-700">
                                             {team.members.map((member) => (
-                                                <tr key={member.id}>
+                                                <tr key={member.teamMemberId}>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-white">{member.userId}</td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                                                             <span className={`px-2 py-1 rounded-full text-xs ${getRoleBadgeClass(member.role)}`}>
@@ -164,8 +187,8 @@ const TeamPage = () => {
                                             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
                                             required
                                         >
-                                            <option value="Player">Player</option>
-                                            <option value="Coach">Coach</option>
+                                            <option value="PLAYER">Player</option>
+                                            <option value="COACH">Coach</option>
                                         </select>
                                     </div>
 

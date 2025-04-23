@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getTeamsByOwner } from '../services/TeamService.js'; // Fixed function name
+import { getTeamsByOwner } from '../services/TeamService.js';
+import { useAuth } from '../contexts/AuthContext';
 
 const OwnedTeamsList = () => {
+    const { currentUser } = useAuth();
     const [teams, setTeams] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [ownerId, setOwnerId] = useState('');
     const [expandedTeamId, setExpandedTeamId] = useState(null);
 
-    // Fetch teams when ownerId changes
+    // Fetch teams when component mounts or currentUser changes
     const fetchTeams = async () => {
-        if (!ownerId) return;
+        if (!currentUser?.userId) return;
 
         setIsLoading(true);
         try {
-            const teamsData = await getTeamsByOwner(ownerId);
+            const teamsData = await getTeamsByOwner(currentUser.userId);
             setTeams(teamsData);
             setError(null);
         } catch (err) {
@@ -27,58 +28,61 @@ const OwnedTeamsList = () => {
         }
     };
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        fetchTeams();
-    };
-
     const toggleTeamDetails = (teamId) => {
         setExpandedTeamId(expandedTeamId === teamId ? null : teamId);
     };
 
-    // Fetch teams when ownerId changes
+    // Fetch teams when currentUser changes
     useEffect(() => {
-        if (ownerId) {
+        if (currentUser?.userId) {
             fetchTeams();
         }
-    }, [ownerId]);
+    }, [currentUser]);
 
     return (
         <div className="p-6 md:p-8">
-            <h2 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">Manage Your Teams</h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-red-500">
+                    Manage Your Teams
+                </h2>
+                <button
+                    onClick={fetchTeams}
+                    className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-lg text-white flex items-center space-x-1 transition"
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <>
+                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Refreshing...</span>
+                        </>
+                    ) : (
+                        <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>Refresh</span>
+                        </>
+                    )}
+                </button>
+            </div>
 
-            {/* ownerId search-form */}
-            <form onSubmit={handleSearch} className="mb-8">
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-grow">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Owner ID</label>
-                        <input
-                            type="text"
-                            value={ownerId}
-                            onChange={(e) => setOwnerId(e.target.value)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
-                            placeholder="Enter your owner ID"
-                        />
+            {/* User info */}
+            <div className="mb-6 bg-gray-800/70 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3">
+                    <div className="bg-pink-600/20 p-2 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
                     </div>
-                    <div className="md:self-end">
-                        <button
-                            type="submit"
-                            className="w-full md:w-auto px-6 py-2.5 bg-pink-600 text-white font-medium rounded-lg shadow-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition duration-200"
-                            disabled={isLoading || !ownerId}
-                        >
-                            {isLoading ? (
-                                <span className="flex items-center justify-center">
-                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Loading...
-                                </span>
-                            ) : 'Find Teams'}
-                        </button>
+                    <div>
+                        <h3 className="text-lg font-medium text-white">{currentUser?.username || 'Loading user...'}</h3>
+                        <p className="text-sm text-gray-400">User ID: {currentUser?.userId || 'Loading...'}</p>
                     </div>
                 </div>
-            </form>
+            </div>
 
             {/* Teams List */}
             <div className="space-y-4">
@@ -104,11 +108,7 @@ const OwnedTeamsList = () => {
                                 <div className="pr-6">
                                     <Link
                                         to={`/team/${team.teamId}`}
-                                        state={{ teamData: {
-                                                ...team,
-                                                // Initialize with empty members array for the team page
-                                                members: []
-                                            }}}
+                                        state={{ teamData: team }}
                                         className="px-4 py-2 bg-pink-600 text-white text-sm rounded-lg hover:bg-pink-700 transition duration-200"
                                     >
                                         View Team
@@ -124,6 +124,14 @@ const OwnedTeamsList = () => {
                                         <p><span className="font-medium text-gray-400">Team ID:</span> {team.teamId}</p>
                                         <p><span className="font-medium text-gray-400">Game:</span> {team.gameName}</p>
                                         <p><span className="font-medium text-gray-400">Owner:</span> {team.ownerId}</p>
+                                    </div>
+                                    <div className="mt-4 flex space-x-3">
+                                        <button className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition">
+                                            Invite Member
+                                        </button>
+                                        <button className="px-3 py-1.5 bg-gray-700 text-white text-sm rounded hover:bg-gray-600 transition">
+                                            Edit Team
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -145,22 +153,26 @@ const OwnedTeamsList = () => {
                                 </svg>
                                 <h3 className="mt-2 text-lg font-medium text-white">Error Loading Teams</h3>
                                 <p className="mt-1 text-gray-400">{error}</p>
-                            </div>
-                        ) : ownerId ? (
-                            <div>
-                                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <h3 className="mt-2 text-lg font-medium text-white">No Teams Found</h3>
-                                <p className="mt-1 text-gray-400">You don't have any teams yet. Create a new team to get started.</p>
+                                <button
+                                    onClick={fetchTeams}
+                                    className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm"
+                                >
+                                    Try Again
+                                </button>
                             </div>
                         ) : (
                             <div>
                                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                 </svg>
-                                <h3 className="mt-2 text-lg font-medium text-white">Enter Your Owner ID</h3>
-                                <p className="mt-1 text-gray-400">Enter your owner ID to see your teams</p>
+                                <h3 className="mt-2 text-lg font-medium text-white">No Teams Found</h3>
+                                <p className="mt-1 text-gray-400">You don't have any teams yet. Create a new team to get started.</p>
+                                <button
+                                    onClick={() => document.querySelector('button[data-tab="create"]')?.click()}
+                                    className="mt-4 px-5 py-2 bg-gradient-to-r from-red-500 to-pink-600 rounded-full text-white hover:from-red-600 hover:to-pink-700 transition"
+                                >
+                                    Create Your First Team
+                                </button>
                             </div>
                         )}
                     </div>

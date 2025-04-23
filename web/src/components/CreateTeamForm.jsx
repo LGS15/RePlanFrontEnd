@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createTeam } from '../services/TeamService.js';
+import { useAuth } from '../contexts/AuthContext';
 
 const CreateTeamForm = () => {
+    const navigate = useNavigate();
+    const { currentUser } = useAuth();
+
     const [teamName, setTeamName] = useState('');
     const [gameName, setGameName] = useState('');
-    const [ownerId, setOwnerId] = useState('');
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -26,13 +30,28 @@ const CreateTeamForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
+
         try {
+            // Use the currentUser ID as the ownerId
+            const ownerId = currentUser?.userId;
+
+            if (!ownerId) {
+                throw new Error('You must be logged in to create a team');
+            }
+
             const teamData = { teamName, gameName, ownerId };
             const createdTeam = await createTeam(teamData);
             setResult(createdTeam);
             setError(null);
 
-
+            // Navigate to the team page after a delay
+            if (createdTeam && createdTeam.teamId) {
+                setTimeout(() => {
+                    navigate(`/team/${createdTeam.teamId}`, {
+                        state: { teamData: createdTeam }
+                    });
+                }, 2000);
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'There seems to have been an error. Please try again later.');
             setResult(null);
@@ -76,21 +95,15 @@ const CreateTeamForm = () => {
                     </div>
                 </div>
 
-                {/* Owner ID Field */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Owner ID</label>
-                    <input
-                        type="text"
-                        value={ownerId}
-                        onChange={(e) => setOwnerId(e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
-                        placeholder="Enter owner ID"
-                        required
-                    />
-                    <p className="mt-1 text-xs text-gray-400">This will be used to identify the team creator</p>
+                {/* Owner ID information - now automatic */}
+                <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                    <p className="text-sm text-gray-300">
+                        <span className="font-medium">Owner:</span> {currentUser?.username || 'Loading user...'}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-400">
+                        Your account will be automatically set as the team owner
+                    </p>
                 </div>
-
-
 
                 {/* Submit Button */}
                 <div>
@@ -122,6 +135,7 @@ const CreateTeamForm = () => {
                         <div>
                             <p className="font-medium">Team created successfully!</p>
                             <p className="text-sm mt-1">Team: {result.teamName} (ID: {result.teamId})</p>
+                            <p className="text-sm mt-1">Redirecting to team page...</p>
                         </div>
                     </div>
                 </div>

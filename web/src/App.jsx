@@ -1,24 +1,52 @@
-
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import LandingPage from './pages/LandingPage'
-import TeamManagementPage from './pages/TeamManagementPage'
-import TeamPage from './pages/TeamPage.jsx'
-import './App.css'
-
-
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import LandingPage from './pages/LandingPage';
+import TeamManagementPage from './pages/TeamManagementPage';
+import TeamPage from './pages/TeamPage.jsx';
+import AuthPage from './pages/AuthPage';
+import ProtectedLayout from './layouts/ProtectedLayout';
+import { initAuthHeader } from './services/AuthService';
+import { AuthProvider } from './contexts/AuthContext';
+import './App.css';
 
 function App() {
+    // Initialize auth header on app load
+    useEffect(() => {
+        initAuthHeader();
+    }, []);
+
     return (
         <Router>
-
+            <AuthProvider>
                 <Routes>
+                    {/* Public routes */}
                     <Route path="/" element={<LandingPage />} />
-                    <Route path="/team-management" element={<TeamManagementPage />} />
-                    <Route path="/team/:teamId" element={<TeamPage />} />
-                </Routes>
+                    <Route path="/auth" element={<AuthPage />} />
 
+                    {/* Protected routes using ProtectedLayout */}
+                    <Route
+                        path="/team-management"
+                        element={
+                            <ProtectedLayout>
+                                <TeamManagementPage />
+                            </ProtectedLayout>
+                        }
+                    />
+                    <Route
+                        path="/team/:teamId"
+                        element={
+                            <ProtectedLayout>
+                                <TeamPage />
+                            </ProtectedLayout>
+                        }
+                    />
+
+                    {/* Catch-all redirect */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </AuthProvider>
         </Router>
-    )
+    );
 }
 
-export default App
+export default App;
