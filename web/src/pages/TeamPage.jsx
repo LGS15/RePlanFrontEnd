@@ -9,37 +9,42 @@ const TeamPage = () => {
 
     // Hooks
     const [team, setTeam] = useState(teamDataFromState || null);
-    const [userId, setUserId] = useState('');
+    const [email, setEmail] = useState('');
     const [role, setRole] = useState('PLAYER');
     const [isAdding, setIsAdding] = useState(false);
     const [addError, setAddError] = useState(null);
     const [addSuccess, setAddSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    // No team data, redirect to team management
+
+
+    // Fetch team members when component mounts
+    useEffect(() => {
+        // Only fetch if we have a team
+        if (team) {
+            const fetchTeamMembers = async () => {
+                try {
+                    setIsLoading(true);
+                    const response = await getTeamMembers(teamId);
+                    setTeam({
+                        ...team,
+                        members: response.members || []
+                    });
+                } catch (err) {
+                    console.error("Error fetching team members:", err);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            fetchTeamMembers();
+        }
+    }, [teamId, team]);
+
     if (!team) {
         return <Navigate to="/team-management" replace />;
     }
 
-    // Fetch team members when component mounts
-    useEffect(() => {
-        const fetchTeamMembers = async () => {
-            try {
-                setIsLoading(true);
-                const response = await getTeamMembers(teamId);
-                setTeam({
-                    ...team,
-                    members: response.members || []
-                });
-            } catch (err) {
-                console.error("Error fetching team members:", err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchTeamMembers();
-    }, [teamId]);
 
     const handleAddMember = async (e) => {
         e.preventDefault();
@@ -48,14 +53,14 @@ const TeamPage = () => {
         setAddError(null);
 
         try {
-            const memberData = { userId, role };
+            const memberData = { email, role };
             const result = await addTeamMember(teamId, memberData);
 
             // Update local state to include the new member
             const newMember = {
                 teamMemberId: result.teamMemberId,
                 teamId,
-                userId,
+                userId: result.userId,
                 role
             };
 
@@ -65,7 +70,7 @@ const TeamPage = () => {
             });
 
             setAddSuccess(true);
-            setUserId('');
+            setEmail('');
             setRole('PLAYER');
         } catch (err) {
             setAddError(err.response?.data?.message || "Error adding team member");
@@ -171,8 +176,8 @@ const TeamPage = () => {
                                         <label className="block text-sm font-medium text-gray-300 mb-2">User ID</label>
                                         <input
                                             type="text"
-                                            value={userId}
-                                            onChange={(e) => setUserId(e.target.value)}
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
                                             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
                                             placeholder="Enter user ID"
                                             required
@@ -195,7 +200,7 @@ const TeamPage = () => {
                                     <button
                                         type="submit"
                                         className="w-full px-4 py-2 bg-pink-600 text-white font-medium rounded-lg shadow-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition duration-200"
-                                        disabled={isAdding || !userId}
+                                        disabled={isAdding || !email}
                                     >
                                         {isAdding ? (
                                             <span className="flex items-center justify-center">
