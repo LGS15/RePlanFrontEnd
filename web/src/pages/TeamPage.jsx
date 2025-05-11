@@ -1,35 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, Link, Navigate } from 'react-router-dom';
-import { addTeamMember, getTeamMembers } from '../services/TeamService.js';
+import {addTeamMember, getTeamMembers, removeTeamMember} from '../services/TeamService.js';
+import { useAuth } from '../contexts/AuthContext';
 
 const TeamPage = () => {
     const { teamId } = useParams();
     const location = useLocation();
     const teamDataFromState = location.state?.teamData;
+    const { currentUser } = useAuth();
 
     // Hooks
-    const [team, setTeam] = useState(teamDataFromState || null);
+    const [team] = useState(teamDataFromState || null);
     const [email, setEmail] = useState('');
     const [role, setRole] = useState('PLAYER');
     const [isAdding, setIsAdding] = useState(false);
     const [addError, setAddError] = useState(null);
     const [addSuccess, setAddSuccess] = useState(false);
+    const [isRemoving, setIsRemoving] = useState(false);
+    const [removingMemberId, setRemovingMemberId] = useState(null);
+    const [removeError, setRemoveError] = useState(null);
+    const [removeSuccess, setRemoveSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [members, setMembers] = useState([]);
 
 
 
     // Fetch team members when component mounts
     useEffect(() => {
-        // Only fetch if we have a team
         if (team) {
             const fetchTeamMembers = async () => {
                 try {
                     setIsLoading(true);
                     const response = await getTeamMembers(teamId);
-                    setTeam({
-                        ...team,
-                        members: response.members || []
-                    });
+                    setMembers(response.members || []);  // Update members state separately
                 } catch (err) {
                     console.error("Error fetching team members:", err);
                 } finally {
@@ -64,10 +67,7 @@ const TeamPage = () => {
                 role
             };
 
-            setTeam({
-                ...team,
-                members: [...(team.members || []), newMember]
-            });
+            setMembers(prevMembers => [...prevMembers, newMember]);
 
             setAddSuccess(true);
             setEmail('');
@@ -79,6 +79,32 @@ const TeamPage = () => {
         }
     };
 
+    const handleRemoveMember = async (userId) => {
+        if (!confirm("Are you sure you want to remove this team member?")) {
+            return;
+        }
+
+        setIsRemoving(true);
+        setRemovingMemberId(userId);
+        setRemoveSuccess(false);
+        setRemoveError(null);
+
+        try {
+            await removeTeamMember(teamId, userId);
+
+            // Update local state to remove the member
+            setMembers(prevMembers => prevMembers.filter(member => member.userId !== userId));
+
+            setRemoveSuccess(true);
+            setTimeout(() => setRemoveSuccess(false), 3000);
+        } catch (err) {
+            setRemoveError(err.response?.data?.message || "Error removing team member");
+            setTimeout(() => setRemoveError(null), 3000);
+        } finally {
+            setIsRemoving(false);
+            setRemovingMemberId(null);
+        }
+    };
     // Get role badge color
     const getRoleBadgeClass = (role) => {
         switch (role) {
@@ -92,6 +118,8 @@ const TeamPage = () => {
                 return 'bg-gray-600/70 text-gray-100';
         }
     };
+
+    const isOwner = currentUser?.userId === team.ownerId;
 
     return (
         <div className="min-h-screen bg-gray-900 text-white">
@@ -117,6 +145,25 @@ const TeamPage = () => {
                     <p className="text-gray-400 mt-2">{team.gameName}</p>
                 </div>
 
+                {/* Status Messages */}
+                {removeSuccess && (
+                    <div className="mb-4 p-4 bg-green-900/30 border border-green-700 rounded-lg text-green-400 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Team member removed successfully!
+                    </div>
+                )}
+
+                {removeError && (
+                    <div className="mb-4 p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-400 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {removeError}
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Team Members Section */}
                     <div className="lg:col-span-2">
@@ -132,24 +179,50 @@ const TeamPage = () => {
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
                                     </div>
-                                ) : team.members && team.members.length > 0 ? (
+                                ) : members && members.length > 0 ? (
                                     <div className="overflow-x-auto">
                                         <table className="min-w-full divide-y divide-gray-700">
                                             <thead>
                                             <tr>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User ID</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
+                                                {isOwner && (
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                                                )}
                                             </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-700">
-                                            {team.members.map((member) => (
+                                            {members.map((member) => (
                                                 <tr key={member.teamMemberId}>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-white">{member.userId}</td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm">
-                                                            <span className={`px-2 py-1 rounded-full text-xs ${getRoleBadgeClass(member.role)}`}>
-                                                                {member.role}
-                                                            </span>
+                                                        <span className={`px-2 py-1 rounded-full text-xs ${getRoleBadgeClass(member.role)}`}>
+                                                            {member.role}
+                                                        </span>
                                                     </td>
+                                                    {isOwner && (
+                                                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                                            {/* Don't show remove button for owner */}
+                                                            {member.role !== 'OWNER' && (
+                                                                <button
+                                                                    onClick={() => handleRemoveMember(member.userId)}
+                                                                    className="text-red-400 hover:text-red-300 focus:outline-none transition"
+                                                                    disabled={isRemoving && removingMemberId === member.userId}
+                                                                >
+                                                                    {isRemoving && removingMemberId === member.userId ? (
+                                                                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                        </svg>
+                                                                    ) : (
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                                        </svg>
+                                                                    )}
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))}
                                             </tbody>

@@ -5,14 +5,16 @@ import TeamManagementPage from './pages/TeamManagementPage';
 import TeamPage from './pages/TeamPage.jsx';
 import AuthPage from './pages/AuthPage';
 import ProtectedLayout from './layouts/ProtectedLayout';
-import { initAuthHeader } from './services/AuthService';
+import { initAuthHeader, setupAxiosInterceptors } from './services/AuthService';
 import { AuthProvider } from './contexts/AuthContext';
 import './App.css';
 
 function App() {
-    // Initialize auth header on app load
+    // Initialize auth header and interceptors on app load
     useEffect(() => {
         initAuthHeader();
+        setupAxiosInterceptors();
+        console.log('Auth services initialized');
     }, []);
 
     return (

@@ -15,11 +15,10 @@ const getAuthHeader = () => {
     };
 };
 
-
 export const createTeam = async (teamData) => {
     try {
         const headers = getAuthHeader();
-        console.log('Creating team with token:', headers.Authorization);
+        console.log('Creating team with token:', headers.Authorization ? 'Token present' : 'No token');
 
         const response = await axios.post(`${API_URL}/teams`, teamData, {
             headers: {
@@ -39,10 +38,11 @@ export const createTeam = async (teamData) => {
     }
 };
 
-
 export const getTeamsByOwner = async (ownerId) => {
     try {
+        // Make sure we have fresh headers for each request
         const headers = getAuthHeader();
+        console.log('Fetching teams with auth header:', headers.Authorization ? 'Token present' : 'No token');
 
         const response = await axios.get(`${API_URL}/teams/owner/${ownerId}`, {
             headers: {
@@ -60,7 +60,6 @@ export const getTeamsByOwner = async (ownerId) => {
         throw error;
     }
 };
-
 
 export const addTeamMember = async (teamId, memberData) => {
     try {
@@ -83,6 +82,26 @@ export const addTeamMember = async (teamId, memberData) => {
     }
 };
 
+export const removeTeamMember = async (teamId, userId) => {
+    try {
+        const headers = getAuthHeader();
+
+        const response = await axios.delete(`${API_URL}/teams/${teamId}/members/${userId}`, {
+            headers: {
+                ...headers,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error removing team member:', error);
+        if (error.response) {
+            console.error('Response status:', error.response.status);
+            console.error('Response data:', error.response.data);
+        }
+        throw error;
+    }
+};
 
 export const getTeamMembers = async (teamId) => {
     try {
