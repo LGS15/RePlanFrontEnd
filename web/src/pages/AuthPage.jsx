@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 // Animated background elements
@@ -33,7 +33,9 @@ const ChaoticElements = () => {
 
 const AuthPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { login, register, currentUser, isAuthenticated } = useAuth();
+
     const [isLogin, setIsLogin] = useState(true);
     const [formData, setFormData] = useState({
         email: '',
@@ -44,12 +46,15 @@ const AuthPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // If already authenticated, redirect to team management
+    // Get the redirect path from location state or default to team management
+    const from = location.state?.from || '/team-management';
+
+    // If already authenticated, redirect to the intended page
     useEffect(() => {
         if (currentUser || isAuthenticated()) {
-            navigate('/team-management');
+            navigate(from);
         }
-    }, [currentUser, navigate, isAuthenticated]);
+    }, [currentUser, navigate, isAuthenticated, from]);
 
     const handleChange = (e) => {
         setFormData({
@@ -65,18 +70,25 @@ const AuthPage = () => {
 
         try {
             if (isLogin) {
-                // Login logic
+
                 const loginData = {
                     email: formData.email,
                     password: formData.password
                 };
 
                 await login(loginData);
-                navigate('/team-management');
+                // Redirect to the page the user was trying to access
+                navigate(from);
             } else {
                 // Register validation
                 if (formData.password !== formData.confirmPassword) {
                     setError('Passwords do not match');
+                    setLoading(false);
+                    return;
+                }
+
+                if (formData.password.length < 6) {
+                    setError('Password must be at least 6 characters');
                     setLoading(false);
                     return;
                 }
@@ -89,14 +101,20 @@ const AuthPage = () => {
                 };
 
                 await register(registerData);
-                navigate('/team-management');
+                navigate(from);
             }
         } catch (err) {
             console.error('Auth error:', err);
-            setError(
-                err.message ||
-                (typeof err === 'string' ? err : 'An error occurred. Please try again.')
-            );
+
+            if (err.message) {
+                setError(err.message);
+            } else if (err.status === 401) {
+                setError('Invalid email or password');
+            } else if (err.status === 409) {
+                setError('Email or username already exists');
+            } else {
+                setError('An error occurred. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
