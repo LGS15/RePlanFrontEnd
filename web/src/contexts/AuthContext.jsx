@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { login, register, isAuthenticated } from '../services/AuthService.js';
+import React, { createContext, useState, useContext, useEffect , useCallback} from 'react';
+import { login, register, isAuthenticated , refreshToken} from '../services/AuthService.js';
 
 const AuthContext = createContext(null);
 
@@ -7,21 +7,65 @@ export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Load user from localStorage on initial render
-        const loadUser = () => {
-            if (isAuthenticated()) {
+    const initializeAuth = useCallback(async () => {
+        if (isAuthenticated()) {
+            try {
+                // Check if token is close to expiration and refresh if needed
+                const tokenData = JSON.parse(atob(localStorage.getItem('token').split('.')[1]));
+                const expiryTime = tokenData.exp * 1000; // Convert to milliseconds
+                const currentTime = Date.now();
+
+                // If token expires in less than 15 minutes, refresh it
+                if (expiryTime - currentTime < 15 * 60 * 1000) {
+                    await refreshTokenSilently();
+                }
+
                 setCurrentUser({
                     userId: localStorage.getItem('userId'),
                     username: localStorage.getItem('username'),
                     email: localStorage.getItem('email')
                 });
+            } catch (error) {
+                console.error("Error initializing authentication:", error);
+                // Clear invalid authentication data
+                localStorage.removeItem('token');
+                localStorage.removeItem('userId');
+                localStorage.removeItem('username');
+                localStorage.removeItem('email');
             }
-            setLoading(false);
-        };
-
-        loadUser();
+        }
+        setLoading(false);
     }, []);
+
+    // Function to silently refresh the token
+    const refreshTokenSilently = async () => {
+        try {
+            const newToken = await refreshToken();
+            if (newToken) {
+                localStorage.setItem('token', newToken);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error("Failed to refresh token:", error);
+            return false;
+        }
+    };
+
+    // Set up token refresh interval and initial auth check
+    useEffect(() => {
+        initializeAuth();
+
+        // Set up an interval to check token expiration every 5 minutes
+        const refreshInterval = setInterval(() => {
+            if (isAuthenticated()) {
+                refreshTokenSilently();
+            }
+        }, 5 * 60 * 1000);
+
+        return () => clearInterval(refreshInterval);
+    }, [initializeAuth]);
+
 
     const handleLogin = async (credentials) => {
         try {
@@ -33,7 +77,10 @@ export const AuthProvider = ({ children }) => {
             });
             return data;
         } catch (error) {
-            throw error;
+
+            const errorMessage = error.response?.data?.message ||
+                (typeof error === 'string' ? error : 'Login failed. Please try again.');
+            throw new Error(errorMessage);
         }
     };
 
@@ -47,7 +94,10 @@ export const AuthProvider = ({ children }) => {
             });
             return data;
         } catch (error) {
-            throw error;
+
+            const errorMessage = error.response?.data?.message ||
+                (typeof error === 'string' ? error : 'Registration failed. Please try again.');
+            throw new Error(errorMessage);
         }
     };
 
@@ -64,7 +114,8 @@ export const AuthProvider = ({ children }) => {
         login: handleLogin,
         register: handleRegister,
         logout: handleLogout,
-        isAuthenticated: isAuthenticated
+        isAuthenticated: isAuthenticated,
+        refreshToken: refreshTokenSilently
     };
 
     return (

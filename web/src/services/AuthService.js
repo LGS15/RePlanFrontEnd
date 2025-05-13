@@ -11,52 +11,126 @@ export const setAuthHeader = (token) => {
     }
 };
 
-// Register a new user
+
 export const register = async (userData) => {
     try {
         const response = await axios.post(`${API_URL}/users/register`, userData);
 
         if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('userId', response.data.userId);
-            localStorage.setItem('username', response.data.username);
-            localStorage.setItem('email', response.data.email);
-            setAuthHeader(response.data.token);
+            storeAuthData(response.data);
         }
 
         return response.data;
     } catch (error) {
-        throw error.response?.data || error;
+        handleAuthError(error);
     }
 };
 
-// Login a user
+
 export const login = async (credentials) => {
     try {
         const response = await axios.post(`${API_URL}/users/login`, credentials);
 
         if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('userId', response.data.userId);
-            localStorage.setItem('username', response.data.username);
-            localStorage.setItem('email', response.data.email);
-            setAuthHeader(response.data.token);
+            storeAuthData(response.data);
         }
 
         return response.data;
     } catch (error) {
-        throw error.response?.data || error;
+        handleAuthError(error);
     }
 };
 
-// Initialize auth header with token from localStorage
+
+export const refreshToken = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+
+        const response = await axios.post(`${API_URL}/users/refresh-token`, {}, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.data.token) {
+            storeAuthData(response.data);
+            return response.data.token;
+        }
+        return null;
+    } catch (error) {
+        console.error('Token refresh failed:', error);
+        return null;
+    }
+};
+
+
+const storeAuthData = (data) => {
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('userId', data.userId);
+    localStorage.setItem('username', data.username);
+    localStorage.setItem('email', data.email);
+    setAuthHeader(data.token);
+};
+
+
+// Handle 401/403 responses globally
+const handleAuthError = (error) => {
+    console.error('Authentication error:', error);
+
+    if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        throw {
+            status: error.response.status,
+            message: error.response.data?.message || 'Authentication failed',
+            data: error.response.data
+        };
+    } else if (error.request) {
+        // The request was made but no response was received
+        throw {
+            status: 0,
+            message: 'No response from server. Please check your internet connection.'
+        };
+    } else {
+        throw {
+            status: 500,
+            message: error.message || 'An unexpected error occurred'
+        };
+    }
+};
+
+
 export const initAuthHeader = () => {
     const token = localStorage.getItem('token');
     if (token) {
         setAuthHeader(token);
         console.log('Auth header initialized with token');
-    } else {
-        console.warn('No token found in localStorage during initialization');
+    }
+};
+
+// Check if user is authenticated and token is still valid
+export const isAuthenticated = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+
+    try {
+        // Get the expiration
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const expiry = payload.exp * 1000; // milliseconds
+
+        // Check if token has expired
+        if (Date.now() >= expiry) {
+
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('username');
+            localStorage.removeItem('email');
+            return false;
+        }
+
+        return true;
+    } catch (e) {
+        console.error('Invalid token format:', e);
+        return false;
     }
 };
 
@@ -75,41 +149,45 @@ export const setupAxiosInterceptors = () => {
         error => Promise.reject(error)
     );
 
-    // Response interceptor
+    // Interceptor with retry on 401
     axios.interceptors.response.use(
         response => response,
-        error => {
-            // Handle 401 (Unauthorized) or 403 (Forbidden) responses
-            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                console.warn('Authentication issue:', error.response.status);
+        async (error) => {
+            const originalRequest = error.config;
 
-                // If it was an API request (not login/register)
-                if (!error.config.url.includes('login') && !error.config.url.includes('register')) {
-                    console.log('Token rejected by API, logging out user...');
-                    // Clear authentication data
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userId');
-                    localStorage.removeItem('username');
-                    localStorage.removeItem('email');
+            // If the error is due to an expired token, and we haven't tried to refresh yet
+            if (error.response && error.response.status === 401 && !originalRequest._retry) {
+                originalRequest._retry = true;
 
-                    // Redirect to login page after a short delay
-                    setTimeout(() => {
-                        window.location.href = '/auth';
-                    }, 100);
+                try {
+                    // Try to refresh the token
+                    const newToken = await refreshToken();
+                    if (newToken) {
+                        // Retry the original request with new token
+                        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+                        return axios(originalRequest);
+                    }
+                } catch (refreshError) {
+                    console.error('Token refresh failed during interceptor:', refreshError);
                 }
+
+                // If we get here, token refresh failed or was not possible
+                localStorage.removeItem('token');
+                localStorage.removeItem('userId');
+                localStorage.removeItem('username');
+                localStorage.removeItem('email');
+
+                // Redirect to login page
+                window.location.href = '/auth';
+                return Promise.reject(error);
             }
+
+            // For 403 Forbidden or other auth errors
+            if (error.response && error.response.status === 403) {
+                console.warn('Access forbidden:', error.response.status);
+
+            }
+
             return Promise.reject(error);
         }
-    );
-};
-
-// Check if user is authenticated
-export const isAuthenticated = () => {
-    const token = localStorage.getItem('token');
-    if (!token) return false;
-
-    // You could add token expiration validation here
-    // For example, decode the JWT and check if it's expired
-
-    return true;
-};
+    );}

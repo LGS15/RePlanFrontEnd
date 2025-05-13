@@ -4,19 +4,30 @@ import NavBar from '../components/NavBar';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProtectedLayout = ({ children }) => {
-    const { currentUser, isAuthenticated } = useAuth();
+    const { currentUser, isAuthenticated , refreshToken} = useAuth();
     const navigate = useNavigate();
 
-    // Check if user is authenticated, redirect to login if not
-    useEffect(() => {
-        if (!currentUser && !isAuthenticated()) {
-            navigate('/auth');
-        }
-    }, [currentUser, navigate, isAuthenticated]);
 
-    // Only render the layout and children if the user is authenticated
+    useEffect(() => {
+        const checkAuthentication = async () => {
+            if (!currentUser) {
+                // Try to refresh token first before redirecting
+                if (isAuthenticated()) {
+                    const refreshSuccess = await refreshToken();
+                    if (!refreshSuccess) {
+                        navigate('/auth', { state: { from: window.location.pathname } });
+                    }
+                } else {
+                    navigate('/auth', { state: { from: window.location.pathname } });
+                }
+            }
+        };
+
+        checkAuthentication();
+    }, [currentUser, navigate, isAuthenticated, refreshToken]);
+
     if (!currentUser && !isAuthenticated()) {
-        return null; // Return nothing while redirecting
+        return null;
     }
 
     return (

@@ -5,18 +5,16 @@ import TeamManagementPage from './pages/TeamManagementPage';
 import TeamPage from './pages/TeamPage.jsx';
 import AuthPage from './pages/AuthPage';
 import ProtectedLayout from './layouts/ProtectedLayout';
-import { initAuthHeader, setupAxiosInterceptors } from './services/AuthService';
+import { setupAxiosInterceptors } from './services/AuthService';
 import { AuthProvider } from './contexts/AuthContext';
 import './App.css';
 
 function App() {
-    // Initialize auth header and interceptors on app load
-    useEffect(() => {
-        initAuthHeader();
-        setupAxiosInterceptors();
-        console.log('Auth services initialized');
-    }, []);
 
+    useEffect(() => {
+        setupAxiosInterceptors();
+        console.log('Auth interceptors initialized');
+    }, []);
     return (
         <Router>
             <AuthProvider>
@@ -25,7 +23,7 @@ function App() {
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/auth" element={<AuthPage />} />
 
-                    {/* Protected routes using ProtectedLayout */}
+                    {/* Protected routes */}
                     <Route
                         path="/team-management"
                         element={
