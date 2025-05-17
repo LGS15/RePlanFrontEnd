@@ -246,13 +246,13 @@ const TeamPage = () => {
                             <div className="p-6">
                                 <form onSubmit={handleAddMember} className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">User ID</label>
+                                        <label className="block text-sm font-medium text-gray-300 mb-2">User Email</label>
                                         <input
                                             type="text"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
-                                            placeholder="Enter user ID"
+                                            placeholder="Enter user Email"
                                             required
                                         />
                                     </div>

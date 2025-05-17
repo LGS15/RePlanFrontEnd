@@ -2,7 +2,11 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:8080';
 
-// Set authorization header for all future requests
+// This right here is 15 minutes in milliseconds
+const TOKEN_EXPIRATION_THRESHOLD = 15 * 60 * 1000;
+
+
+
 export const setAuthHeader = (token) => {
     if (token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -11,6 +15,24 @@ export const setAuthHeader = (token) => {
     }
 };
 
+
+const getTokenExpiration = (token) => {
+    try {
+        if (!token) return null;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp * 1000; // Milliseconds
+    } catch (e) {
+        console.error('Invalid token format:', e);
+        return null;
+    }
+};
+
+// Check if token is expiring soon
+const isTokenExpiringSoon = (token) => {
+    const expiry = getTokenExpiration(token);
+    if (!expiry) return true;
+    return Date.now() + TOKEN_EXPIRATION_THRESHOLD >= expiry;
+};
 
 export const register = async (userData) => {
     try {
@@ -26,7 +48,6 @@ export const register = async (userData) => {
     }
 };
 
-
 export const login = async (credentials) => {
     try {
         const response = await axios.post(`${API_URL}/users/login`, credentials);
@@ -41,11 +62,15 @@ export const login = async (credentials) => {
     }
 };
 
-
 export const refreshToken = async () => {
     try {
         const token = localStorage.getItem('token');
         if (!token) return null;
+
+        // Only refresh if the token is valid but expiring soon
+        if (!isTokenExpiringSoon(token)) {
+            return token; // Return existing token if it's not expiring soon
+        }
 
         const response = await axios.post(`${API_URL}/users/refresh-token`, {}, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -58,10 +83,13 @@ export const refreshToken = async () => {
         return null;
     } catch (error) {
         console.error('Token refresh failed:', error);
+        // Clear auth data if refresh fails due to invalid token
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            clearAuthData();
+        }
         return null;
     }
 };
-
 
 const storeAuthData = (data) => {
     localStorage.setItem('token', data.token);
@@ -71,6 +99,13 @@ const storeAuthData = (data) => {
     setAuthHeader(data.token);
 };
 
+const clearAuthData = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+    localStorage.removeItem('email');
+    setAuthHeader(null);
+};
 
 // Handle 401/403 responses globally
 const handleAuthError = (error) => {
@@ -98,58 +133,71 @@ const handleAuthError = (error) => {
     }
 };
 
-
 export const initAuthHeader = () => {
     const token = localStorage.getItem('token');
     if (token) {
-        setAuthHeader(token);
-        console.log('Auth header initialized with token');
+        // Check if token is valid before setting header
+        if (isValidToken(token)) {
+            setAuthHeader(token);
+            console.log('Auth header initialized with token');
+        } else {
+            clearAuthData();
+            console.warn('Invalid token found in localStorage, cleared auth data');
+        }
     }
 };
 
-// Check if user is authenticated and token is still valid
+
 export const isAuthenticated = () => {
     const token = localStorage.getItem('token');
+    return isValidToken(token);
+};
+
+// Validate token format and expiration
+export const isValidToken = (token) => {
     if (!token) return false;
 
     try {
-        // Get the expiration
         const payload = JSON.parse(atob(token.split('.')[1]));
         const expiry = payload.exp * 1000; // milliseconds
 
         // Check if token has expired
         if (Date.now() >= expiry) {
-
-            localStorage.removeItem('token');
-            localStorage.removeItem('userId');
-            localStorage.removeItem('username');
-            localStorage.removeItem('email');
+            clearAuthData();
             return false;
         }
 
         return true;
     } catch (e) {
         console.error('Invalid token format:', e);
+        clearAuthData();
         return false;
     }
 };
 
-// Handle 401/403 responses globally
+
 export const setupAxiosInterceptors = () => {
     // Request interceptor
     axios.interceptors.request.use(
-        config => {
-            // Ensure Authorization header is set on every request
+        async config => {
+            // Try to refresh token before request if it's expiring soon
             const token = localStorage.getItem('token');
-            if (token) {
+
+            if (token && isTokenExpiringSoon(token)) {
+                const newToken = await refreshToken();
+                if (newToken) {
+                    config.headers.Authorization = `Bearer ${newToken}`;
+                }
+            } else if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
+
             return config;
         },
         error => Promise.reject(error)
     );
 
-    // Interceptor with retry on 401
+    // Response interceptor with retry on 401
     axios.interceptors.response.use(
         response => response,
         async (error) => {
@@ -172,10 +220,7 @@ export const setupAxiosInterceptors = () => {
                 }
 
                 // If we get here, token refresh failed or was not possible
-                localStorage.removeItem('token');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('username');
-                localStorage.removeItem('email');
+                clearAuthData();
 
                 // Redirect to login page
                 window.location.href = '/auth';
@@ -184,10 +229,10 @@ export const setupAxiosInterceptors = () => {
 
             // For 403 Forbidden or other auth errors
             if (error.response && error.response.status === 403) {
-                console.warn('Access forbidden:', error.response.status);
-
+                console.warn('Access forbidden:', error.response.data);
             }
 
             return Promise.reject(error);
         }
-    );}
+    );
+}
