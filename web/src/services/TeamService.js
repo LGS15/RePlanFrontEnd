@@ -38,6 +38,28 @@ export const createTeam = async (teamData) => {
     }
 };
 
+export const deleteTeam = async (teamId) => {
+    try {
+        const headers = getAuthHeader();
+        console.log('Deleting team with token:', headers.Authorization ? 'Token present' : 'No token');
+
+        const response = await axios.delete(`${API_URL}/teams/${teamId}`, {
+            headers: {
+                ...headers,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting team:', error);
+        if (error.response) {
+            console.error('Response status:', error.response.status);
+            console.error('Response data:', error.response.data);
+        }
+        throw error;
+    }
+};
+
 export const getTeamsByOwner = async (ownerId) => {
     try {
         // Make sure we have fresh headers for each request
@@ -53,6 +75,28 @@ export const getTeamsByOwner = async (ownerId) => {
         return response.data;
     } catch (error) {
         console.error('Error fetching teams by owner:', error);
+        if (error.response) {
+            console.error('Response status:', error.response.status);
+            console.error('Response data:', error.response.data);
+        }
+        throw error;
+    }
+};
+
+export const getTeamsByUser = async (userId) => {
+    try {
+        const headers = getAuthHeader();
+        console.log('Fetching teams by user with auth header:', headers.Authorization ? 'Token present' : 'No token');
+
+        const response = await axios.get(`${API_URL}/teams/user/${userId}`, {
+            headers: {
+                ...headers,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching teams by user:', error);
         if (error.response) {
             console.error('Response status:', error.response.status);
             console.error('Response data:', error.response.data);

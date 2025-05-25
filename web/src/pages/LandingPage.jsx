@@ -187,6 +187,7 @@ const Footer = () => {
 };
 
 // Main Landing Page
+// Main Landing Page
 const LandingPage = () => {
     return (
         <div className="bg-gray-900 text-white min-h-screen overflow-hidden">
@@ -202,10 +203,13 @@ const LandingPage = () => {
                             <a href="#features" className="px-3 py-2 text-gray-300 hover:text-white transition">Features</a>
                             <a href="#pricing" className="px-3 py-2 text-gray-300 hover:text-white transition">Pricing</a>
                             <a href="#testimonials" className="px-3 py-2 text-gray-300 hover:text-white transition">Testimonials</a>
-                            <Link to="/team-management" className="px-3 py-2 text-gray-300 hover:text-white transition">Dashboard</Link>
-                            <button className="ml-4 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 to-red-500 text-white hover:from-pink-600 hover:to-red-600 transform hover:scale-105 transition duration-300">
+                            <Link to="/dashboard" className="px-3 py-2 text-gray-300 hover:text-white transition">Dashboard</Link>
+                            <Link
+                                to="/auth"
+                                className="ml-4 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 to-red-500 text-white hover:from-pink-600 hover:to-red-600 transform hover:scale-105 transition duration-300"
+                            >
                                 Sign Up
-                            </button>
+                            </Link>
                         </div>
                         <div className="md:hidden flex items-center">
                             <button className="text-gray-400 hover:text-white">

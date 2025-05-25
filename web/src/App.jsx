@@ -7,7 +7,9 @@ import AuthPage from './pages/AuthPage';
 import ProtectedLayout from './layouts/ProtectedLayout';
 import { setupAxiosInterceptors } from './services/AuthService';
 import { AuthProvider } from './contexts/AuthContext';
+import TeamDashboard from "./components/TeamDashboard.jsx";
 import './App.css';
+
 
 function App() {
 
@@ -15,6 +17,7 @@ function App() {
         setupAxiosInterceptors();
         console.log('Auth interceptors initialized');
     }, []);
+
     return (
         <Router>
             <AuthProvider>
@@ -24,6 +27,14 @@ function App() {
                     <Route path="/auth" element={<AuthPage />} />
 
                     {/* Protected routes */}
+                    <Route
+                        path="/dashboard"
+                        element={
+                            <ProtectedLayout>
+                                <TeamDashboard />
+                            </ProtectedLayout>
+                        }
+                    />
                     <Route
                         path="/team-management"
                         element={

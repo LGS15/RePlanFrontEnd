@@ -39,8 +39,11 @@ const NavBar = () => {
                     <div className="hidden md:flex items-center space-x-4">
                         {isAuthenticated ? (
                             <>
+                                <Link to="/dashboard" className="px-3 py-2 text-gray-300 hover:text-white transition">
+                                    Dashboard
+                                </Link>
                                 <Link to="/team-management" className="px-3 py-2 text-gray-300 hover:text-white transition">
-                                    My Teams
+                                    Teams
                                 </Link>
                                 <div className="relative ml-3">
                                     <div>
@@ -120,11 +123,18 @@ const NavBar = () => {
                         {isAuthenticated ? (
                             <>
                                 <Link
+                                    to="/dashboard"
+                                    className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 rounded-md"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    Dashboard
+                                </Link>
+                                <Link
                                     to="/team-management"
                                     className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 rounded-md"
                                     onClick={() => setIsMenuOpen(false)}
                                 >
-                                    My Teams
+                                    Teams
                                 </Link>
                                 <Link
                                     to="/profile"

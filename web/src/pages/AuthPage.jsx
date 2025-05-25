@@ -46,8 +46,8 @@ const AuthPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Get the redirect path from location state or default to team management
-    const from = location.state?.from || '/team-management';
+    // Get the redirect path from location state or default to dashboard
+    const from = location.state?.from || '/dashboard';
 
     // If already authenticated, redirect to the intended page
     useEffect(() => {

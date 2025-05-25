@@ -23,8 +23,6 @@ const TeamPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [members, setMembers] = useState([]);
 
-
-
     // Fetch team members when component mounts
     useEffect(() => {
         if (team) {
@@ -32,7 +30,7 @@ const TeamPage = () => {
                 try {
                     setIsLoading(true);
                     const response = await getTeamMembers(teamId);
-                    setMembers(response.members || []);  // Update members state separately
+                    setMembers(response.members || []);
                 } catch (err) {
                     console.error("Error fetching team members:", err);
                 } finally {
@@ -47,7 +45,6 @@ const TeamPage = () => {
     if (!team) {
         return <Navigate to="/team-management" replace />;
     }
-
 
     const handleAddMember = async (e) => {
         e.preventDefault();
@@ -64,16 +61,18 @@ const TeamPage = () => {
                 teamMemberId: result.teamMemberId,
                 teamId,
                 userId: result.userId,
+                username: result.username,
+                email: result.email,
                 role
             };
 
             setMembers(prevMembers => [...prevMembers, newMember]);
-
             setAddSuccess(true);
             setEmail('');
             setRole('PLAYER');
         } catch (err) {
-            setAddError(err.response?.data?.message || "Error adding team member");
+            const errorMessage = err.response?.data?.message || "Error adding team member";
+            setAddError(errorMessage);
         } finally {
             setIsAdding(false);
         }
@@ -91,10 +90,7 @@ const TeamPage = () => {
 
         try {
             await removeTeamMember(teamId, userId);
-
-            // Update local state to remove the member
             setMembers(prevMembers => prevMembers.filter(member => member.userId !== userId));
-
             setRemoveSuccess(true);
             setTimeout(() => setRemoveSuccess(false), 3000);
         } catch (err) {
@@ -105,6 +101,7 @@ const TeamPage = () => {
             setRemovingMemberId(null);
         }
     };
+
     // Get role badge color
     const getRoleBadgeClass = (role) => {
         switch (role) {
@@ -184,7 +181,8 @@ const TeamPage = () => {
                                         <table className="min-w-full divide-y divide-gray-700">
                                             <thead>
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User ID</th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Username</th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
                                                 {isOwner && (
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
@@ -194,7 +192,12 @@ const TeamPage = () => {
                                             <tbody className="divide-y divide-gray-700">
                                             {members.map((member) => (
                                                 <tr key={member.teamMemberId}>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-white">{member.userId}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-white">
+                                                        {member.username || 'Unknown User'}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                                        {member.email || 'No email'}
+                                                    </td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                                                         <span className={`px-2 py-1 rounded-full text-xs ${getRoleBadgeClass(member.role)}`}>
                                                             {member.role}
@@ -248,11 +251,11 @@ const TeamPage = () => {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-300 mb-2">User Email</label>
                                         <input
-                                            type="text"
+                                            type="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
-                                            placeholder="Enter user Email"
+                                            placeholder="Enter user email"
                                             required
                                         />
                                     </div>

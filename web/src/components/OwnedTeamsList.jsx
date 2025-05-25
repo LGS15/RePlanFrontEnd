@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getTeamsByOwner } from '../services/TeamService.js';
+import {deleteTeam, getTeamsByOwner} from '../services/TeamService.js';
 import { useAuth } from '../contexts/AuthContext';
 
 const OwnedTeamsList = () => {
@@ -9,6 +9,9 @@ const OwnedTeamsList = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [expandedTeamId, setExpandedTeamId] = useState(null);
+    const [deletingTeamId, setDeletingTeamId] = useState(null);
+    const [deleteSuccess, setDeleteSuccess] = useState(false);
+    const [deleteError, setDeleteError] = useState(null);
 
     // Fetch teams when component mounts or currentUser changes
     const fetchTeams = async () => {
@@ -30,6 +33,32 @@ const OwnedTeamsList = () => {
 
     const toggleTeamDetails = (teamId) => {
         setExpandedTeamId(expandedTeamId === teamId ? null : teamId);
+    };
+
+    const handleDeleteTeam = async (teamId, teamName) => {
+        if (!confirm(`Are you sure you want to delete the team "${teamName}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        setDeletingTeamId(teamId);
+        setDeleteSuccess(false);
+        setDeleteError(null);
+
+        try {
+            await deleteTeam(teamId);
+
+            // Remove the deleted team from the local state
+            setTeams(prevTeams => prevTeams.filter(team => team.teamId !== teamId));
+
+            setDeleteSuccess(true);
+            setTimeout(() => setDeleteSuccess(false), 3000);
+        } catch (err) {
+            console.error('Error deleting team:', err);
+            setDeleteError(err.response?.data?.message || 'Error deleting team');
+            setTimeout(() => setDeleteError(null), 3000);
+        } finally {
+            setDeletingTeamId(null);
+        }
     };
 
     // Fetch teams when currentUser changes
@@ -84,6 +113,25 @@ const OwnedTeamsList = () => {
                 </div>
             </div>
 
+            {/* Status Messages */}
+            {deleteSuccess && (
+                <div className="mb-4 p-4 bg-green-900/30 border border-green-700 rounded-lg text-green-400 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Team deleted successfully!
+                </div>
+            )}
+
+            {deleteError && (
+                <div className="mb-4 p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-400 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {deleteError}
+                </div>
+            )}
+
             {/* Teams List */}
             <div className="space-y-4">
                 {teams.length > 0 ? (
@@ -105,7 +153,7 @@ const OwnedTeamsList = () => {
                                         </svg>
                                     </div>
                                 </div>
-                                <div className="pr-6">
+                                <div className="pr-6 flex space-x-2">
                                     <Link
                                         to={`/team/${team.teamId}`}
                                         state={{ teamData: team }}
@@ -113,6 +161,24 @@ const OwnedTeamsList = () => {
                                     >
                                         View Team
                                     </Link>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteTeam(team.teamId, team.teamName);
+                                        }}
+                                        disabled={deletingTeamId === team.teamId}
+                                        className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {deletingTeamId === team.teamId ? (
+                                            <span className="flex items-center">
+                                                <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Deleting...
+                                            </span>
+                                        ) : 'Delete'}
+                                    </button>
                                 </div>
                             </div>
 
@@ -131,6 +197,13 @@ const OwnedTeamsList = () => {
                                         </button>
                                         <button className="px-3 py-1.5 bg-gray-700 text-white text-sm rounded hover:bg-gray-600 transition">
                                             Edit Team
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteTeam(team.teamId, team.teamName)}
+                                            disabled={deletingTeamId === team.teamId}
+                                            className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition disabled:opacity-50"
+                                        >
+                                            {deletingTeamId === team.teamId ? 'Deleting...' : 'Delete Team'}
                                         </button>
                                     </div>
                                 </div>
