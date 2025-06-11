@@ -1,4 +1,3 @@
-import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
 class WebSocketService {
@@ -12,10 +11,8 @@ class WebSocketService {
     connect() {
         return new Promise((resolve, reject) => {
             try {
-                const socket = new SockJS('http://localhost:8080/ws/review-session');
-
                 this.client = new Client({
-                    webSocketFactory: () => socket,
+                    brokerURL: 'ws://localhost:8080/ws/review-session',
                     connectHeaders: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     },
@@ -211,7 +208,6 @@ class WebSocketService {
         return this.connected;
     }
 }
-
 
 const webSocketService = new WebSocketService();
 export default webSocketService;
