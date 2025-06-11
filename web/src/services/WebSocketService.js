@@ -12,8 +12,12 @@ class WebSocketService {
     connect() {
         return new Promise((resolve, reject) => {
             try {
+                const token = localStorage.getItem('token');
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
                 this.client = new Client({
                     webSocketFactory: () => new SockJS('http://localhost:8080/ws/review-session'),
+                    connectHeaders: headers,
                     debug: (str) => {
                         console.log('STOMP Debug:', str);
                     },
