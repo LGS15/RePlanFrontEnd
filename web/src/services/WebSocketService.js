@@ -1,4 +1,5 @@
 import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 class WebSocketService {
     constructor() {
@@ -12,7 +13,7 @@ class WebSocketService {
         return new Promise((resolve, reject) => {
             try {
                 this.client = new Client({
-                    brokerURL: 'ws://localhost:8080/ws/review-session',
+                    webSocketFactory: () => new SockJS('http://localhost:8080/ws/review-session'),
                     debug: (str) => {
                         console.log('STOMP Debug:', str);
                     },
