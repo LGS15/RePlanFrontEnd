@@ -13,39 +13,32 @@ class WebSocketService {
             try {
                 this.client = new Client({
                     brokerURL: 'ws://localhost:8080/ws/review-session',
-                    connectHeaders: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
                     debug: (str) => {
                         console.log('STOMP Debug:', str);
                     },
                     reconnectDelay: 5000,
                     heartbeatIncoming: 4000,
                     heartbeatOutgoing: 4000,
+                    onConnect: (frame) => {
+                        console.log('✅ Connected to WebSocket:', frame);
+                        this.connected = true;
+                        resolve();
+                    },
+                    onStompError: (frame) => {
+                        console.error('❌ STOMP error:', frame);
+                        this.connected = false;
+                        reject(new Error(`WebSocket connection failed: ${frame.headers.message || 'Unknown error'}`));
+                    },
+                    onWebSocketError: (error) => {
+                        console.error('❌ WebSocket error:', error);
+                        this.connected = false;
+                        reject(error);
+                    },
+                    onDisconnect: () => {
+                        console.log('🔌 Disconnected from WebSocket');
+                        this.connected = false;
+                    }
                 });
-
-                this.client.onConnect = (frame) => {
-                    console.log('Connected to WebSocket:', frame);
-                    this.connected = true;
-                    resolve();
-                };
-
-                this.client.onStompError = (frame) => {
-                    console.error('STOMP error:', frame);
-                    this.connected = false;
-                    reject(new Error('WebSocket connection failed'));
-                };
-
-                this.client.onWebSocketError = (error) => {
-                    console.error('WebSocket error:', error);
-                    this.connected = false;
-                    reject(error);
-                };
-
-                this.client.onDisconnect = () => {
-                    console.log('Disconnected from WebSocket');
-                    this.connected = false;
-                };
 
                 this.client.activate();
             } catch (error) {
@@ -57,7 +50,6 @@ class WebSocketService {
 
     disconnect() {
         if (this.client && this.connected) {
-            // Unsubscribe from all subscriptions
             this.subscriptions.forEach((subscription) => {
                 subscription.unsubscribe();
             });
@@ -82,7 +74,7 @@ class WebSocketService {
             const subscription = this.client.subscribe(destination, (message) => {
                 try {
                     const data = JSON.parse(message.body);
-                    console.log('Received message:', data);
+                    console.log('📨 Received message:', data);
                     messageHandler(data);
                 } catch (error) {
                     console.error('Error parsing message:', error);
@@ -92,7 +84,7 @@ class WebSocketService {
             this.subscriptions.set(sessionId, subscription);
             this.messageHandlers.set(sessionId, messageHandler);
 
-            console.log(`Subscribed to session: ${sessionId}`);
+            console.log(`📡 Subscribed to session: ${sessionId}`);
             return subscription;
         } catch (error) {
             console.error('Error subscribing to session:', error);
@@ -106,7 +98,7 @@ class WebSocketService {
             subscription.unsubscribe();
             this.subscriptions.delete(sessionId);
             this.messageHandlers.delete(sessionId);
-            console.log(`Unsubscribed from session: ${sessionId}`);
+            console.log(`🚫 Unsubscribed from session: ${sessionId}`);
         }
     }
 
@@ -124,7 +116,7 @@ class WebSocketService {
                     isPlaying: true
                 })
             });
-            console.log('Sent play command:', { sessionId, timestamp });
+            console.log('▶️ Sent play command:', { sessionId, timestamp });
         } catch (error) {
             console.error('Error sending play command:', error);
         }
@@ -144,7 +136,7 @@ class WebSocketService {
                     isPlaying: false
                 })
             });
-            console.log('Sent pause command:', { sessionId, timestamp });
+            console.log('⏸️ Sent pause command:', { sessionId, timestamp });
         } catch (error) {
             console.error('Error sending pause command:', error);
         }
@@ -164,26 +156,9 @@ class WebSocketService {
                     isPlaying: isPlaying
                 })
             });
-            console.log('Sent seek command:', { sessionId, timestamp, isPlaying });
+            console.log('⏭️ Sent seek command:', { sessionId, timestamp, isPlaying });
         } catch (error) {
             console.error('Error sending seek command:', error);
-        }
-    }
-
-    sendNote(sessionId, noteData) {
-        if (!this.connected || !this.client) {
-            console.error('WebSocket not connected');
-            return;
-        }
-
-        try {
-            this.client.publish({
-                destination: `/app/session/${sessionId}/note`,
-                body: JSON.stringify(noteData)
-            });
-            console.log('Sent note:', { sessionId, noteData });
-        } catch (error) {
-            console.error('Error sending note:', error);
         }
     }
 
@@ -198,7 +173,7 @@ class WebSocketService {
                 destination: `/app/session/${sessionId}/sync`,
                 body: JSON.stringify({})
             });
-            console.log('Requested sync for session:', sessionId);
+            console.log('🔄 Requested sync for session:', sessionId);
         } catch (error) {
             console.error('Error requesting sync:', error);
         }
