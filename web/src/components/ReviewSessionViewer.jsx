@@ -14,6 +14,7 @@ const ReviewSessionViewer = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [connectionError, setConnectionError] = useState(null);
     const [participants, setParticipants] = useState([]);
     const [notes, setNotes] = useState([]);
     const [newNote, setNewNote] = useState('');
@@ -24,22 +25,23 @@ const ReviewSessionViewer = () => {
     const [duration, setDuration] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
 
+
     useEffect(() => {
         const initializeSession = async () => {
             try {
+                console.log('🚀 Initializing session:', sessionId);
+
+                // First, get session data
                 const sessionData = await getSessionById(sessionId);
                 setSession(sessionData);
+                console.log('✅ Session data loaded:', sessionData);
 
-                await webSocketService.connect();
-                setIsConnected(true);
-
-                webSocketService.subscribeToSession(sessionId, handleWebSocketMessage);
-
-                webSocketService.requestSync(sessionId);
+                // Then connect to WebSocket
+                await connectToWebSocket();
 
             } catch (err) {
-                console.error('Error initializing session:', err);
-                setError(err.response?.data?.message || 'Error loading session');
+                console.error('❌ Error initializing session:', err);
+                setError(err.response?.data?.message || err.message || 'Error loading session');
             } finally {
                 setIsLoading(false);
             }
@@ -47,36 +49,87 @@ const ReviewSessionViewer = () => {
 
         initializeSession();
 
+        // Cleanup on unmount
         return () => {
+            console.log('🧹 Cleaning up session viewer...');
             webSocketService.unsubscribeFromSession(sessionId);
             webSocketService.disconnect();
         };
     }, [sessionId]);
 
+    const connectToWebSocket = async () => {
+        try {
+            console.log('🔌 Connecting to WebSocket...');
+            setConnectionError(null);
+
+            await webSocketService.connect();
+            console.log('✅ WebSocket connected successfully');
+
+            // Wait a moment for connection to stabilize
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Subscribe to session messages
+            const subscription = webSocketService.subscribeToSession(sessionId, handleWebSocketMessage);
+            if (subscription) {
+                setIsConnected(true);
+                console.log('📡 Successfully subscribed to session messages');
+
+                // Request sync after subscribing
+                setTimeout(() => {
+                    console.log('🔄 Requesting initial sync...');
+                    webSocketService.requestSync(sessionId);
+                }, 1000);
+            } else {
+                throw new Error('Failed to subscribe to session');
+            }
+
+        } catch (err) {
+            console.error('❌ WebSocket connection failed:', err);
+            setConnectionError(err.message);
+            setIsConnected(false);
+
+            // Retry connection after delay
+            setTimeout(() => {
+                console.log('🔄 Retrying WebSocket connection...');
+                connectToWebSocket();
+            }, 5000);
+        }
+    };
+
     const handleWebSocketMessage = (message) => {
-        console.log('Received WebSocket message:', message);
+        console.log('📨 Processing WebSocket message:', message);
+
+        // Ignore messages from the current user for video controls to prevent loops
+        const isFromCurrentUser = message.userId === currentUser?.userId;
 
         switch (message.type) {
             case 'PLAY':
-                if (playerRef.current && message.userId !== currentUser?.userId) {
+                if (!isFromCurrentUser && playerRef.current) {
+                    console.log('▶️ Applying PLAY command from another user');
                     playerRef.current.seekTo(message.payload.timestamp / 1000);
-                    setTimeout(() => playerRef.current.play(), 100);
-                    setIsPlaying(true);
-                    setCurrentTime(message.payload.timestamp / 1000);
+                    setTimeout(() => {
+                        playerRef.current.play();
+                        setIsPlaying(true);
+                        setCurrentTime(message.payload.timestamp / 1000);
+                    }, 100);
                 }
                 break;
 
             case 'PAUSE':
-                if (playerRef.current && message.userId !== currentUser?.userId) {
+                if (!isFromCurrentUser && playerRef.current) {
+                    console.log('⏸️ Applying PAUSE command from another user');
                     playerRef.current.seekTo(message.payload.timestamp / 1000);
-                    setTimeout(() => playerRef.current.pause(), 100);
-                    setIsPlaying(false);
-                    setCurrentTime(message.payload.timestamp / 1000);
+                    setTimeout(() => {
+                        playerRef.current.pause();
+                        setIsPlaying(false);
+                        setCurrentTime(message.payload.timestamp / 1000);
+                    }, 100);
                 }
                 break;
 
             case 'SEEK':
-                if (playerRef.current && message.userId !== currentUser?.userId) {
+                if (!isFromCurrentUser && playerRef.current) {
+                    console.log('⏭️ Applying SEEK command from another user');
                     playerRef.current.seekTo(message.payload.timestamp / 1000);
                     setCurrentTime(message.payload.timestamp / 1000);
 
@@ -104,18 +157,26 @@ const ReviewSessionViewer = () => {
 
             case 'SYNC_RESPONSE':
                 if (playerRef.current) {
-                    playerRef.current.seekTo(message.payload.timestamp / 1000);
-                    setCurrentTime(message.payload.timestamp / 1000);
+                    console.log('🔄 Applying SYNC response:', message.payload);
+                    const syncTime = message.payload.timestamp / 1000;
 
-                    setTimeout(() => {
-                        if (message.payload.isPlaying) {
-                            playerRef.current.play();
-                            setIsPlaying(true);
-                        } else {
-                            playerRef.current.pause();
-                            setIsPlaying(false);
-                        }
-                    }, 100);
+                    // Only sync if there's a significant difference
+                    const timeDiff = Math.abs(currentTime - syncTime);
+                    if (timeDiff > 2) { // More than 2 seconds difference
+                        playerRef.current.seekTo(syncTime);
+                        setCurrentTime(syncTime);
+
+                        setTimeout(() => {
+                            if (message.payload.isPlaying) {
+                                playerRef.current.play();
+                                setIsPlaying(true);
+                            } else {
+                                playerRef.current.pause();
+                                setIsPlaying(false);
+                            }
+                        }, 100);
+                    }
+
                 }
                 break;
 
@@ -133,25 +194,33 @@ const ReviewSessionViewer = () => {
                 break;
 
             default:
-                console.log('Unknown message type:', message.type);
+                console.log('❓ Unknown message type:', message.type);
         }
     };
 
     const handlePlay = () => {
         if (playerRef.current && isConnected) {
             const timestamp = Math.floor(playerRef.current.getCurrentTime() * 1000);
+            console.log('▶️ Sending PLAY command:', { sessionId, timestamp });
+
             webSocketService.sendPlay(sessionId, timestamp);
             playerRef.current.play();
             setIsPlaying(true);
+        } else {
+            console.warn('Cannot play: player or WebSocket not ready');
         }
     };
 
     const handlePause = () => {
         if (playerRef.current && isConnected) {
             const timestamp = Math.floor(playerRef.current.getCurrentTime() * 1000);
+            console.log('⏸️ Sending PAUSE command:', { sessionId, timestamp });
+
             webSocketService.sendPause(sessionId, timestamp);
             playerRef.current.pause();
             setIsPlaying(false);
+        } else {
+            console.warn('Cannot pause: player or WebSocket not ready');
         }
     };
 
@@ -162,10 +231,14 @@ const ReviewSessionViewer = () => {
             const newTime = pos * duration;
             const timestamp = Math.floor(newTime * 1000);
 
+            console.log('⏭️ Sending SEEK command:', { sessionId, timestamp, isPlaying });
+
             playerRef.current.seekTo(newTime);
             setCurrentTime(newTime);
 
             webSocketService.sendSeek(sessionId, timestamp, isPlaying);
+        } else {
+            console.warn('Cannot seek: player or WebSocket not ready');
         }
     };
 
@@ -198,6 +271,11 @@ const ReviewSessionViewer = () => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const retryConnection = () => {
+        setConnectionError(null);
+        connectToWebSocket();
     };
 
     if (isLoading) {
@@ -251,6 +329,14 @@ const ReviewSessionViewer = () => {
                         }`}>
                             {isConnected ? 'Connected' : 'Disconnected'}
                         </div>
+                        {connectionError && (
+                            <button
+                                onClick={retryConnection}
+                                className="px-3 py-1 rounded-full text-sm bg-yellow-600/70 text-yellow-100 hover:bg-yellow-700/70 transition"
+                            >
+                                Retry Connection
+                            </button>
+                        )}
                         <button
                             onClick={handleLeaveSession}
                             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
@@ -259,6 +345,26 @@ const ReviewSessionViewer = () => {
                         </button>
                     </div>
                 </div>
+
+                {/* Connection Error Banner */}
+                {connectionError && (
+                    <div className="mb-6 p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-400">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                <span>WebSocket connection failed: {connectionError}</span>
+                            </div>
+                            <button
+                                onClick={retryConnection}
+                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     {/* Video Player */}
@@ -290,7 +396,8 @@ const ReviewSessionViewer = () => {
                                     <div className="flex items-center space-x-4">
                                         <button
                                             onClick={isPlaying ? handlePause : handlePlay}
-                                            className="flex items-center justify-center w-10 h-10 bg-pink-600 rounded-full hover:bg-pink-700 transition"
+                                            disabled={!isConnected}
+                                            className="flex items-center justify-center w-10 h-10 bg-pink-600 rounded-full hover:bg-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {isPlaying ? (
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -308,7 +415,7 @@ const ReviewSessionViewer = () => {
                                     </div>
 
                                     <div className="text-sm text-gray-400">
-                                        Synchronized YouTube playback
+                                        {isConnected ? 'Synchronized playback' : 'Not synchronized'}
                                     </div>
                                 </div>
                             </div>
@@ -327,6 +434,9 @@ const ReviewSessionViewer = () => {
                                         <span className="text-sm">{participant.username}</span>
                                     </div>
                                 ))}
+                                {participants.length === 0 && (
+                                    <p className="text-gray-400 text-sm">No other participants visible</p>
+                                )}
                             </div>
                         </div>
 
@@ -348,7 +458,8 @@ const ReviewSessionViewer = () => {
                                         <div className="flex space-x-2">
                                             <button
                                                 onClick={handleAddNote}
-                                                className="px-3 py-1 bg-pink-600 text-white text-sm rounded hover:bg-pink-700 transition"
+                                                disabled={!isConnected}
+                                                className="px-3 py-1 bg-pink-600 text-white text-sm rounded hover:bg-pink-700 transition disabled:opacity-50"
                                             >
                                                 Add
                                             </button>
@@ -366,7 +477,8 @@ const ReviewSessionViewer = () => {
                                 ) : (
                                     <button
                                         onClick={() => setIsAddingNote(true)}
-                                        className="w-full px-3 py-2 bg-gray-700 text-gray-300 text-sm rounded hover:bg-gray-600 transition"
+                                        disabled={!isConnected}
+                                        className="w-full px-3 py-2 bg-gray-700 text-gray-300 text-sm rounded hover:bg-gray-600 transition disabled:opacity-50"
                                     >
                                         + Add Note
                                     </button>
