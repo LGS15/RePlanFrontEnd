@@ -1,50 +1,19 @@
-import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-const YouTubePlayer = React.forwardRef(({
-                                            videoUrl,
-                                            onTimeUpdate,
-                                            onDurationChange,
-                                            onPlay,
-                                            onPause,
-                                            onSeek,
-                                            className = ""
-                                        }, ref) => {
+const YouTubePlayer = ({
+                           videoUrl,
+                           onTimeUpdate,
+                           onDurationChange,
+                           onPlay,
+                           onPause,
+                           onSeek,
+                           className = ""
+                       }) => {
     const [isReady, setIsReady] = useState(false);
     const [videoId, setVideoId] = useState(null);
     const [error, setError] = useState(null);
     const youtubePlayerRef = useRef(null);
     const containerRef = useRef(null);
-
-    // Expose player methods via ref
-    useImperativeHandle(ref, () => ({
-        play: () => {
-            if (youtubePlayerRef.current) {
-                youtubePlayerRef.current.playVideo();
-            }
-        },
-        pause: () => {
-            if (youtubePlayerRef.current) {
-                youtubePlayerRef.current.pauseVideo();
-            }
-        },
-        seekTo: (time) => {
-            if (youtubePlayerRef.current) {
-                youtubePlayerRef.current.seekTo(time, true);
-                if (onSeek) onSeek(time);
-            }
-        },
-        getCurrentTime: () => {
-            return youtubePlayerRef.current ? youtubePlayerRef.current.getCurrentTime() : 0;
-        },
-        getDuration: () => {
-            return youtubePlayerRef.current ? youtubePlayerRef.current.getDuration() : 0;
-        },
-        isPlaying: () => {
-            return youtubePlayerRef.current ?
-                youtubePlayerRef.current.getPlayerState() === window.YT?.PlayerState?.PLAYING :
-                false;
-        }
-    }), [onSeek]);
 
     // Extract YouTube video ID from various YouTube URL formats
     const extractYouTubeVideoId = (url) => {
@@ -190,6 +159,21 @@ const YouTubePlayer = React.forwardRef(({
         };
     }, [videoUrl]);
 
+    // Expose player controls
+    useEffect(() => {
+        if (isReady && containerRef.current && youtubePlayerRef.current) {
+            containerRef.current.play = () => youtubePlayerRef.current?.playVideo();
+            containerRef.current.pause = () => youtubePlayerRef.current?.pauseVideo();
+            containerRef.current.seekTo = (time) => {
+                youtubePlayerRef.current?.seekTo(time, true);
+                if (onSeek) onSeek(time);
+            };
+            containerRef.current.getCurrentTime = () => youtubePlayerRef.current?.getCurrentTime() || 0;
+            containerRef.current.getDuration = () => youtubePlayerRef.current?.getDuration() || 0;
+            containerRef.current.isPlaying = () => youtubePlayerRef.current?.getPlayerState() === window.YT?.PlayerState?.PLAYING;
+        }
+    }, [isReady, onSeek]);
+
     // Time update interval
     useEffect(() => {
         if (!isReady || !youtubePlayerRef.current) return;
@@ -227,6 +211,8 @@ const YouTubePlayer = React.forwardRef(({
         );
     }
 
+    // Always render the container div, even during loading
+
     return (
         <div className={`relative ${className}`}>
             {/* Always render the container, even when loading */}
@@ -249,9 +235,6 @@ const YouTubePlayer = React.forwardRef(({
             )}
         </div>
     );
-});
-
-// Set display name for debugging
-YouTubePlayer.displayName = 'YouTubePlayer';
+};
 
 export default YouTubePlayer;

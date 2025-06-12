@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage';
 import TeamManagementPage from './pages/TeamManagementPage';
 import TeamPage from './pages/TeamPage.jsx';
 import AuthPage from './pages/AuthPage';
+import ReviewSessionPage from './pages/ReviewSessionPage.jsx';
 import ProtectedLayout from './layouts/ProtectedLayout';
 import { setupAxiosInterceptors } from './services/AuthService';
 import { AuthProvider } from './contexts/AuthContext';
@@ -48,6 +49,14 @@ function App() {
                         element={
                             <ProtectedLayout>
                                 <TeamPage />
+                            </ProtectedLayout>
+                        }
+                    />
+                    <Route
+                        path="/review-session/:sessionId"
+                        element={
+                            <ProtectedLayout>
+                                <ReviewSessionPage />
                             </ProtectedLayout>
                         }
                     />
