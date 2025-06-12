@@ -231,23 +231,36 @@ const ReviewSessionViewer = () => {
                 if (playerRef.current) {
                     console.log('🔄 Applying SYNC response:', message.payload);
                     const syncTime = message.payload.timestamp / 1000;
+                    const syncPlaying = message.payload.isPlaying;
 
-                    // Only sync if there's a significant difference
-                    const timeDiff = Math.abs(currentTime - syncTime);
-                    if (timeDiff > 2) { // More than 2 seconds difference
-                        playerRef.current.seekTo(syncTime);
-                        setCurrentTime(syncTime);
+                    // Always apply the sync response when it's received
+                    // This ensures initial sync works properly
+                    console.log('📊 Sync details:', {
+                        currentTime: currentTime,
+                        syncTime: syncTime,
+                        currentPlaying: isPlaying,
+                        syncPlaying: syncPlaying,
+                        shouldSync: true // Always sync on SYNC_RESPONSE
+                    });
 
-                        setTimeout(() => {
-                            if (message.payload.isPlaying) {
-                                playerRef.current.play();
-                                setIsPlaying(true);
-                            } else {
-                                playerRef.current.pause();
-                                setIsPlaying(false);
-                            }
-                        }, 100);
-                    }
+                    // Apply the synchronized state
+                    playerRef.current.seekTo(syncTime);
+                    setCurrentTime(syncTime);
+
+                    setTimeout(() => {
+                        if (syncPlaying && !playerRef.current.isPlaying()) {
+                            console.log('▶️ Starting playback from sync');
+                            playerRef.current.play();
+                            setIsPlaying(true);
+                        } else if (!syncPlaying && playerRef.current.isPlaying()) {
+                            console.log('⏸️ Pausing playback from sync');
+                            playerRef.current.pause();
+                            setIsPlaying(false);
+                        } else {
+                            console.log('✅ Playback state already matches sync');
+                            setIsPlaying(syncPlaying);
+                        }
+                    }, 100);
                 }
                 break;
 
