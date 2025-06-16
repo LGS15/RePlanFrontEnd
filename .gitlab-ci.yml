@@ -1,0 +1,31 @@
+image: node:20
+
+cache:
+  paths:
+    - web/node_modules/
+
+stages:
+  - test
+  - build
+
+before_script:
+  - cd web
+  - npm ci
+
+cypress_tests:
+  stage: test
+  script:
+    - npm run test:e2e
+  artifacts:
+    when: always
+    paths:
+      - cypress/screenshots
+      - cypress/videos
+
+build_app:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist
