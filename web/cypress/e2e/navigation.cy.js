@@ -17,6 +17,6 @@ describe('Auth Page', () => {
     it('toggles between sign in and sign up forms', () => {
         cy.visit('/auth')
         cy.contains("Don't have an account? Sign up").click()
-        cy.contains('Create an account')
+        cy.contains('Create your account')
     })
 })

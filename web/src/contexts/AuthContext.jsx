@@ -78,7 +78,8 @@ export const AuthProvider = ({ children }) => {
             return data;
         } catch (error) {
 
-            const errorMessage = error.response?.data?.message ||
+            const errorMessage = error.message ||
+                error.response?.data?.message ||
                 (typeof error === 'string' ? error : 'Login failed. Please try again.');
             throw new Error(errorMessage);
         }
@@ -95,7 +96,8 @@ export const AuthProvider = ({ children }) => {
             return data;
         } catch (error) {
 
-            const errorMessage = error.response?.data?.message ||
+            const errorMessage = error.message ||
+                error.response?.data?.message ||
                 (typeof error === 'string' ? error : 'Registration failed. Please try again.');
             throw new Error(errorMessage);
         }
