@@ -8,7 +8,7 @@ describe('Auth errors', () => {
         cy.get('input[name="email"]').type('wrong@example.com')
         cy.get('input[name="password"]').type('badpass')
         cy.contains('button', 'Sign In').click()
-        cy.contains('Invalid credentials')
+        cy.contains('Authentication failed')
     })
 
     it('shows error when registering with existing account', () => {
