@@ -176,6 +176,9 @@ export const isValidToken = (token) => {
 };
 
 
+
+
+    // Response interceptor with retry on 401
 export const setupAxiosInterceptors = () => {
     axios.interceptors.request.use(
         async config => {
@@ -195,7 +198,6 @@ export const setupAxiosInterceptors = () => {
         error => Promise.reject(error)
     );
 
-
     axios.interceptors.response.use(
         response => response,
         async (error) => {
@@ -203,6 +205,15 @@ export const setupAxiosInterceptors = () => {
 
             if (error.response && error.response.status === 401 && !originalRequest._retry) {
                 originalRequest._retry = true;
+
+                // Skip interceptor logic for auth endpoints cuz auth-error test then fail
+                const isAuthEndpoint = originalRequest.url?.includes('/users/login') ||
+                    originalRequest.url?.includes('/users/register') ||
+                    originalRequest.url?.includes('/users/refresh-token');
+
+                if (isAuthEndpoint) {
+                    return Promise.reject(error);
+                }
 
                 try {
                     const newToken = await refreshToken();
@@ -229,4 +240,4 @@ export const setupAxiosInterceptors = () => {
             return Promise.reject(error);
         }
     );
-}
+};
