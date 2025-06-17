@@ -2,7 +2,7 @@ describe('Auth errors', () => {
     it('displays error for invalid login', () => {
         cy.intercept('POST', 'http://localhost:8080/users/login', {
             statusCode: 401,
-            body: { message: 'Invalid credentials' }
+            body: { message: 'Authentication failed' }
         })
         cy.visit('/auth')
         cy.get('input[name="email"]').type('wrong@example.com')

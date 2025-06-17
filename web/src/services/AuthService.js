@@ -177,10 +177,8 @@ export const isValidToken = (token) => {
 
 
 export const setupAxiosInterceptors = () => {
-    // Request interceptor
     axios.interceptors.request.use(
         async config => {
-            // Try to refresh token before request if it's expiring soon
             const token = localStorage.getItem('token');
 
             if (token && isTokenExpiringSoon(token)) {
@@ -197,18 +195,16 @@ export const setupAxiosInterceptors = () => {
         error => Promise.reject(error)
     );
 
-    // Response interceptor with retry on 401
+
     axios.interceptors.response.use(
         response => response,
         async (error) => {
             const originalRequest = error.config;
 
-            // If the error is due to an expired token, and we haven't tried to refresh yet
             if (error.response && error.response.status === 401 && !originalRequest._retry) {
                 originalRequest._retry = true;
 
                 try {
-                    // Try to refresh the token
                     const newToken = await refreshToken();
                     if (newToken) {
                         // Retry the original request with new token
@@ -222,12 +218,10 @@ export const setupAxiosInterceptors = () => {
                 // If we get here, token refresh failed or was not possible
                 clearAuthData();
 
-                // Redirect to login page
                 window.location.href = '/auth';
                 return Promise.reject(error);
             }
 
-            // For 403 Forbidden or other auth errors
             if (error.response && error.response.status === 403) {
                 console.warn('Access forbidden:', error.response.data);
             }

@@ -106,12 +106,13 @@ const AuthPage = () => {
         } catch (err) {
             console.error('Auth error:', err);
 
-            if (err.message) {
-                setError(err.message);
-            } else if (err.status === 401) {
-                setError('Invalid email or password');
+            if (err.status === 401) {
+                // Consistent message for failed authentication
+                setError('Authentication failed');
             } else if (err.status === 409) {
                 setError('Email or username already exists');
+            } else if (err.message) {
+                setError(err.message);
             } else {
                 setError('An error occurred. Please try again.');
             }
