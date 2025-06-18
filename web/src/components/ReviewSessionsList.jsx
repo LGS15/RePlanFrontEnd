@@ -52,6 +52,8 @@ const ReviewSessionsList = ({ teamId, team, onRefresh }) => {
             // Navigate to the review session page
             navigate(`/review-session/${sessionId}`);
 
+            navigate(0);
+
         } catch (err) {
             console.error('Error joining session:', err);
             setError(err.response?.data?.message || 'Error joining session');
