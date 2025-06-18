@@ -25,9 +25,6 @@ const ReviewSessionViewer = () => {
     const [duration, setDuration] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
 
-    // FIXED INITIALIZATION USEEFFECT - REPLACE YOUR EXISTING ONE
-    // Replace the useEffect and connection functions in ReviewSessionViewer.jsx
-
     useEffect(() => {
         let isComponentMounted = true;
         let hasInitialized = false;
@@ -48,7 +45,7 @@ const ReviewSessionViewer = () => {
                 if (!isComponentMounted) return;
 
                 setSession(sessionData);
-                console.log('✅ Session data loaded:', sessionData);
+                console.log(' Session data loaded:', sessionData);
 
                 // Connect to WebSocket with longer delay for stability
                 setTimeout(async () => {
@@ -101,7 +98,7 @@ const ReviewSessionViewer = () => {
 
             // Check if already connected
             if (webSocketService.isConnected()) {
-                console.log('✅ WebSocket already connected, subscribing...');
+                console.log(' WebSocket already connected, subscribing...');
                 await subscribeToSession();
                 return;
             }
@@ -113,7 +110,7 @@ const ReviewSessionViewer = () => {
             );
 
             await Promise.race([connectionPromise, timeoutPromise]);
-            console.log('✅ WebSocket connected successfully');
+            console.log(' WebSocket connected successfully');
 
             // Wait for connection to stabilize
             await new Promise(resolve => setTimeout(resolve, 1500));
@@ -282,7 +279,6 @@ const ReviewSessionViewer = () => {
         }
     };
 
-    // IMPROVED CONTROL HANDLERS - REPLACE YOUR EXISTING ONES
     const handlePlay = () => {
         if (playerRef.current && isConnected) {
             const timestamp = Math.floor(playerRef.current.getCurrentTime() * 1000);
@@ -335,7 +331,6 @@ const ReviewSessionViewer = () => {
         }
     };
 
-    // KEEP ALL YOUR EXISTING FUNCTIONS BELOW (handleAddNote, handleLeaveSession, formatTime, retryConnection)
     const handleAddNote = () => {
         if (newNote.trim() && playerRef.current && isConnected) {
             const noteData = {
@@ -345,6 +340,16 @@ const ReviewSessionViewer = () => {
             };
 
             webSocketService.sendNote(sessionId, noteData);
+            setNotes(prev => [
+                ...prev,
+                {
+                    id: noteData.noteId,
+                    content: noteData.content,
+                    timestamp: noteData.videoTimestamp,
+                    author: currentUser?.username || 'You',
+                    createdAt: new Date()
+                }
+            ]);
             setNewNote('');
             setIsAddingNote(false);
         }
