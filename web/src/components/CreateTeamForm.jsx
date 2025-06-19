@@ -76,6 +76,7 @@ const CreateTeamForm = () => {
                             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
                             placeholder="Enter team name"
                             required
+                            data-cy="team-name"
                         />
                     </div>
 
@@ -87,6 +88,7 @@ const CreateTeamForm = () => {
                             onChange={(e) => setGameName(e.target.value)}
                             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition duration-200"
                             required
+                            data-cy="game-name"
                         >
                             {gameOptions.map(option => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -111,6 +113,7 @@ const CreateTeamForm = () => {
                         type="submit"
                         disabled={isLoading}
                         className={`w-full px-6 py-3 bg-gradient-to-r from-pink-600 to-red-600 text-white font-medium rounded-lg shadow-lg hover:from-pink-700 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition duration-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        data-cy="create-team-btn"
                     >
                         {isLoading ? (
                             <span className="flex items-center justify-center">

@@ -154,6 +154,7 @@ const AuthPage = () => {
                             <input
                                 id="email"
                                 name="email"
+                                data-cy="auth-email"
                                 type="email"
                                 autoComplete="email"
                                 required
@@ -171,6 +172,7 @@ const AuthPage = () => {
                                 <input
                                     id="username"
                                     name="username"
+                                    data-cy="auth-username"
                                     type="text"
                                     autoComplete="username"
                                     required
@@ -188,6 +190,7 @@ const AuthPage = () => {
                             <input
                                 id="password"
                                 name="password"
+                                data-cy="auth-password"
                                 type="password"
                                 autoComplete={isLogin ? "current-password" : "new-password"}
                                 required
@@ -205,6 +208,7 @@ const AuthPage = () => {
                                 <input
                                     id="confirmPassword"
                                     name="confirmPassword"
+                                    data-cy="auth-confirm-password"
                                     type="password"
                                     required
                                     value={formData.confirmPassword}
