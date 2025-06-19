@@ -24,6 +24,19 @@ const ReviewSessionViewer = () => {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [volume, setVolume] = useState(100);
+
+    useEffect(() => {
+        if (playerRef.current && typeof
+        playerRef.current.setVolume === 'function') {
+            try{
+                playerRef.current.setVolume(volume);
+            }
+            catch(e){
+
+            }
+        }
+    })
 
     useEffect(() => {
         let isComponentMounted = true;
@@ -331,6 +344,14 @@ const ReviewSessionViewer = () => {
         }
     };
 
+    const handleVolumeChange = (e) => {
+        const newVolume = Number(e.target.value);
+        setVolume(newVolume);
+        if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
+            playerRef.current.setVolume(newVolume);
+        }
+    }
+
     const handleAddNote = () => {
         if (newNote.trim() && playerRef.current && isConnected) {
             const noteData = {
@@ -512,6 +533,14 @@ const ReviewSessionViewer = () => {
                                         <span className="text-sm">
                                             {formatTime(currentTime)} / {formatTime(duration)}
                                         </span>
+                                        <input
+                                        type ="range"
+                                        min="0"
+                                        max="100"
+                                        value={volume}
+                                        onChange={handleVolumeChange}
+                                        className="w-24 h-2"
+                                        />
                                     </div>
 
                                     <div className="text-sm text-gray-400">

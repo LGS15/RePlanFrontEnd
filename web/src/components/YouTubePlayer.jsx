@@ -43,10 +43,20 @@ const YouTubePlayer = React.forwardRef(({
             return youtubePlayerRef.current ?
                 youtubePlayerRef.current.getPlayerState() === window.YT?.PlayerState?.PLAYING :
                 false;
+        },
+        setVolume: (v) =>{
+            if(youtubePlayerRef.current && typeof youtubePlayerRef.current.setVolume === 'function'){
+                youtubePlayerRef.current.setVolume(v);
+            }
+        },
+        getVolume: () => {
+            return youtubePlayerRef.current && typeof youtubePlayerRef.current.getVolume === 'function'
+            ? youtubePlayerRef.current.getVolume()
+                : 100;
         }
     }), [onSeek]);
 
-    // Extract YouTube video ID from various YouTube URL formats
+
     const extractYouTubeVideoId = (url) => {
         if (!url) return null;
 
