@@ -45,6 +45,9 @@ const NavBar = () => {
                                 <Link to="/team-management" className="px-3 py-2 text-gray-300 hover:text-white transition">
                                     Teams
                                 </Link>
+                                <Link to="/practice-plans" className="px-3 py-2 text-gray-300 hover:text-white transition">
+                                    Practice Plans
+                                </Link>
                                 <div className="relative ml-3">
                                     <div>
                                         <button
@@ -135,6 +138,13 @@ const NavBar = () => {
                                     onClick={() => setIsMenuOpen(false)}
                                 >
                                     Teams
+                                </Link>
+                                <Link
+                                    to="/practice-plans"
+                                    className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 rounded-md"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    Practice Plans
                                 </Link>
                                 <Link
                                     to="/profile"

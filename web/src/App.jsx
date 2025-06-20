@@ -5,6 +5,7 @@ import TeamManagementPage from './pages/TeamManagementPage';
 import TeamPage from './pages/TeamPage.jsx';
 import AuthPage from './pages/AuthPage';
 import ReviewSessionPage from './pages/ReviewSessionPage.jsx';
+import PracticePlanPage from './pages/PracticePlanPage.jsx';
 import ProtectedLayout from './layouts/ProtectedLayout';
 import { setupAxiosInterceptors } from './services/AuthService';
 import { AuthProvider } from './contexts/AuthContext';
@@ -41,6 +42,14 @@ function App() {
                         element={
                             <ProtectedLayout>
                                 <TeamManagementPage />
+                            </ProtectedLayout>
+                        }
+                    />
+                    <Route
+                        path="/practice-plans"
+                        element={
+                            <ProtectedLayout>
+                                <PracticePlanPage />
                             </ProtectedLayout>
                         }
                     />

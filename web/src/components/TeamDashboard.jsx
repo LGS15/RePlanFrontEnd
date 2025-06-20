@@ -160,6 +160,12 @@ const TeamDashboard = () => {
                         >
                             Create New Team
                         </Link>
+                        <Link
+                            to="/practice-plans"
+                            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg shadow-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+                        >
+                            Practice Plans
+                        </Link>
                         <button
                             onClick={fetchAllTeams}
                             className="px-6 py-3 bg-gray-700 text-white font-medium rounded-lg shadow-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-200"
