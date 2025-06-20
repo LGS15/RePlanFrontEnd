@@ -5,9 +5,8 @@ cache:
     - web/node_modules/
 
 stages:
-  - test
   - build
-
+  - test
 before_script:
   - cd web
   - npm ci

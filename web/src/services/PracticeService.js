@@ -99,7 +99,7 @@ export const getCurrentUserPracticeHistory = async (limit = 10) => {
 /**
  * @param {string} userId
  * @param {number} limit
- * @returns {Promise<Array>} 
+ * @returns {Promise<Array>}
  */
 export const getUserPracticeHistory = async (userId, limit = 10) => {
     try {
@@ -208,6 +208,28 @@ export const validatePracticeRequest = (request) => {
         isValid: errors.length === 0,
         errors
     };
+};
+
+export const getPopularCombinations = async () => {
+    try {
+        const headers = getAuthHeader();
+        console.log('Fetching popular combinations with token:', headers.Authorization ? 'Token present' : 'No token');
+
+        const response = await axios.get(`${API_URL}/practice-calculator/popular`, {
+            headers: {
+                ...headers,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching popular combinations:', error);
+        if (error.response) {
+            console.error('Response status:', error.response.status);
+            console.error('Response data:', error.response.data);
+        }
+        throw error;
+    }
 };
 
 /**
