@@ -46,7 +46,6 @@ const AuthPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Get the redirect path from location state or default to dashboard
     const from = location.state?.from || '/dashboard';
 
     // If already authenticated, redirect to the intended page
@@ -77,10 +76,10 @@ const AuthPage = () => {
                 };
 
                 await login(loginData);
-                // Redirect to the page the user was trying to access
+
                 navigate(from);
             } else {
-                // Register validation
+
                 if (formData.password !== formData.confirmPassword) {
                     setError('Passwords do not match');
                     setLoading(false);
@@ -93,7 +92,6 @@ const AuthPage = () => {
                     return;
                 }
 
-                // Register logic
                 const registerData = {
                     email: formData.email,
                     password: formData.password,
@@ -107,7 +105,6 @@ const AuthPage = () => {
             console.error('Auth error:', err);
 
             if (err.status === 401) {
-                // Consistent message for failed authentication
                 setError('Authentication failed');
             } else if (err.status === 409) {
                 setError('Email or username already exists');

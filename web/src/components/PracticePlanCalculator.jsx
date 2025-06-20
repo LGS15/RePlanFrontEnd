@@ -50,7 +50,6 @@ const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }
             const focuses = await getAvailableFocuses();
             setAvailableFocuses(focuses);
         } catch (err) {
-            console.error('Error fetching focuses:', err);
             setError('Failed to load focus areas');
         } finally {
             setIsLoadingFocuses(false);
@@ -62,7 +61,6 @@ const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }
             const combinations = await getPopularCombinations();
             setPopularCombinations(combinations);
         } catch (err) {
-            console.error('Error fetching popular combinations:', err);
             // Don't set error since this is not critical
         }
     };

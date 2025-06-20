@@ -26,7 +26,6 @@ export const AuthProvider = ({ children }) => {
                     email: localStorage.getItem('email')
                 });
             } catch (error) {
-                console.error("Error initializing authentication:", error);
                 // Clear invalid authentication data
                 localStorage.removeItem('token');
                 localStorage.removeItem('userId');
@@ -37,7 +36,6 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    // Function to silently refresh the token
     const refreshTokenSilently = async () => {
         try {
             const newToken = await refreshToken();
@@ -47,12 +45,11 @@ export const AuthProvider = ({ children }) => {
             }
             return false;
         } catch (error) {
-            console.error("Failed to refresh token:", error);
             return false;
         }
     };
 
-    // Set up token refresh interval and initial auth check
+
     useEffect(() => {
         initializeAuth();
 

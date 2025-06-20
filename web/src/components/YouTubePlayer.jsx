@@ -88,7 +88,6 @@ const YouTubePlayer = React.forwardRef(({
                 return;
             }
 
-            console.log('✅ Video ID:', extractedVideoId);
             setVideoId(extractedVideoId);
 
             // Wait for both YouTube API and DOM container
@@ -99,10 +98,8 @@ const YouTubePlayer = React.forwardRef(({
                 });
 
                 if (window.YT?.Player && containerRef.current) {
-                    console.log('🚀 Both YouTube API and container ready!');
                     createPlayer(extractedVideoId);
                 } else {
-                    console.log('⏳ Waiting for YouTube API or container...');
                     setTimeout(checkAndInit, 100);
                 }
             };
@@ -112,8 +109,6 @@ const YouTubePlayer = React.forwardRef(({
 
         const createPlayer = (videoId) => {
             try {
-                console.log('🎬 Creating YouTube player...');
-
                 // Clear container
                 if (containerRef.current) {
                     containerRef.current.innerHTML = '';
@@ -136,7 +131,6 @@ const YouTubePlayer = React.forwardRef(({
                     },
                     events: {
                         onReady: (event) => {
-                            console.log('🎉 YouTube player ready!');
                             setIsReady(true);
                             setError(null);
 
@@ -149,7 +143,6 @@ const YouTubePlayer = React.forwardRef(({
                             else if (event.data === window.YT.PlayerState.PAUSED && onPause) onPause();
                         },
                         onError: (event) => {
-                            console.error('💥 YouTube player error:', event.data);
                             let errorMessage = 'Error loading video: ';
                             switch (event.data) {
                                 case 2: errorMessage += 'Invalid video ID'; break;
@@ -165,14 +158,12 @@ const YouTubePlayer = React.forwardRef(({
                     }
                 });
             } catch (error) {
-                console.error('💥 Error creating player:', error);
                 setError('Failed to create video player');
             }
         };
 
         // Load YouTube API if not already loaded
         if (!window.YT) {
-            console.log('📥 Loading YouTube API...');
 
             const script = document.createElement('script');
             script.src = 'https://www.youtube.com/iframe_api';
@@ -180,11 +171,9 @@ const YouTubePlayer = React.forwardRef(({
             document.head.appendChild(script);
 
             window.onYouTubeIframeAPIReady = () => {
-                console.log('✅ YouTube API loaded!');
                 initPlayer();
             };
         } else {
-            console.log('✅ YouTube API already available');
             initPlayer();
         }
 
@@ -200,7 +189,6 @@ const YouTubePlayer = React.forwardRef(({
         };
     }, [videoUrl]);
 
-    // Time update interval
     useEffect(() => {
         if (!isReady || !youtubePlayerRef.current) return;
 

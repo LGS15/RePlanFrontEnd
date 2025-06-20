@@ -20,7 +20,6 @@ const ReviewSessionViewer = () => {
     const [newNote, setNewNote] = useState('');
     const [isAddingNote, setIsAddingNote] = useState(false);
 
-    // Video state
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -44,31 +43,25 @@ const ReviewSessionViewer = () => {
 
         const initializeSession = async () => {
             if (hasInitialized) {
-                console.log('Session already initialized, skipping...');
                 return;
             }
             hasInitialized = true;
 
             try {
-                console.log('🚀 Initializing session:', sessionId);
 
-                // First, get session data
                 const sessionData = await getSessionById(sessionId);
 
                 if (!isComponentMounted) return;
 
                 setSession(sessionData);
-                console.log(' Session data loaded:', sessionData);
 
-                // Connect to WebSocket with longer delay for stability
                 setTimeout(async () => {
                     if (isComponentMounted) {
                         await connectToWebSocket();
                     }
-                }, 1000); // Increased delay
+                }, 500);
 
             } catch (err) {
-                console.error('❌ Error initializing session:', err);
                 if (isComponentMounted) {
                     setError(err.response?.data?.message || err.message || 'Error loading session');
                 }
@@ -79,15 +72,13 @@ const ReviewSessionViewer = () => {
             }
         };
 
-        // Only initialize if we haven't done so already
+
         if (!hasInitialized) {
             initializeSession();
         }
 
-        // Cleanup function
         return () => {
             isComponentMounted = false;
-            console.log('🧹 Cleaning up session viewer...');
 
             // Only unsubscribe, don't disconnect (let other instances use the connection)
             if (sessionId) {
@@ -97,7 +88,6 @@ const ReviewSessionViewer = () => {
             // Only disconnect if no other subscriptions exist
             setTimeout(() => {
                 if (webSocketService.subscriptions.size === 0) {
-                    console.log('No active subscriptions, disconnecting...');
                     webSocketService.disconnect();
                 }
             }, 500);
@@ -106,24 +96,19 @@ const ReviewSessionViewer = () => {
 
     const connectToWebSocket = async () => {
         try {
-            console.log('🔌 Connecting to WebSocket...');
             setConnectionError(null);
 
-            // Check if already connected
             if (webSocketService.isConnected()) {
-                console.log(' WebSocket already connected, subscribing...');
                 await subscribeToSession();
                 return;
             }
 
-            // Connect with timeout
             const connectionPromise = webSocketService.connect();
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('Connection timeout')), 10000)
             );
 
             await Promise.race([connectionPromise, timeoutPromise]);
-            console.log(' WebSocket connected successfully');
 
             // Wait for connection to stabilize
             await new Promise(resolve => setTimeout(resolve, 1500));
@@ -136,14 +121,12 @@ const ReviewSessionViewer = () => {
             }
 
         } catch (err) {
-            console.error('❌ WebSocket connection failed:', err);
             setConnectionError(err.message);
             setIsConnected(false);
 
-            // Retry with exponential backoff (only once)
+            // Retry with exponential delay
             if (!err.message.includes('timeout')) {
                 setTimeout(() => {
-                    console.log('🔄 Retrying WebSocket connection...');
                     connectToWebSocket();
                 }, 5000);
             }
@@ -156,7 +139,6 @@ const ReviewSessionViewer = () => {
 
             if (subscription) {
                 setIsConnected(true);
-                console.log('📡 Successfully subscribed to session messages');
 
                 // Request sync after subscription is confirmed
                 setTimeout(() => {
@@ -164,26 +146,21 @@ const ReviewSessionViewer = () => {
                         console.log('🔄 Requesting initial sync...');
                         webSocketService.requestSync(sessionId);
                     }
-                }, 1000); // Reduced delay
+                }, 600);
             } else {
                 throw new Error('Failed to subscribe to session');
             }
         } catch (err) {
-            console.error('❌ Failed to subscribe to session:', err);
             setConnectionError(err.message);
             throw err;
         }
     };
 
-    // FIXED MESSAGE HANDLER - REPLACE YOUR EXISTING ONE
     const handleWebSocketMessage = (message) => {
-        console.log('📨 Processing WebSocket message:', message);
 
         switch (message.type) {
             case 'PLAY':
-                // Remove user filtering - all users should sync to the same state
                 if (playerRef.current) {
-                    console.log('▶️ Applying PLAY command');
                     playerRef.current.seekTo(message.payload.timestamp / 1000);
                     setTimeout(() => {
                         playerRef.current.play();
@@ -194,8 +171,7 @@ const ReviewSessionViewer = () => {
                 break;
 
             case 'PAUSE':
-                if (playerRef.current) {
-                    console.log('⏸️ Applying PAUSE command');
+                if (playerRef.current) {;
                     playerRef.current.seekTo(message.payload.timestamp / 1000);
                     setTimeout(() => {
                         playerRef.current.pause();
@@ -207,7 +183,6 @@ const ReviewSessionViewer = () => {
 
             case 'SEEK':
                 if (playerRef.current) {
-                    console.log('⏭️ Applying SEEK command');
                     playerRef.current.seekTo(message.payload.timestamp / 1000);
                     setCurrentTime(message.payload.timestamp / 1000);
 
@@ -224,7 +199,6 @@ const ReviewSessionViewer = () => {
                 break;
 
             case 'NOTE_ADDED':
-                // Notes should still filter out current user to avoid duplicates
                 { const isFromCurrentUser = message.userId === currentUser?.userId;
                 if (!isFromCurrentUser) {
                     setNotes(prev => [...prev, {
@@ -239,18 +213,15 @@ const ReviewSessionViewer = () => {
 
             case 'SYNC_RESPONSE':
                 if (playerRef.current) {
-                    console.log('🔄 Applying SYNC response:', message.payload);
                     const syncTime = message.payload.timestamp / 1000;
                     const syncPlaying = message.payload.isPlaying;
 
-                    // Always apply the sync response when it's received
-                    // This ensures initial sync works properly
                     console.log('📊 Sync details:', {
                         currentTime: currentTime,
                         syncTime: syncTime,
                         currentPlaying: isPlaying,
                         syncPlaying: syncPlaying,
-                        shouldSync: true // Always sync on SYNC_RESPONSE
+                        shouldSync: true
                     });
 
                     // Apply the synchronized state
@@ -259,15 +230,12 @@ const ReviewSessionViewer = () => {
 
                     setTimeout(() => {
                         if (syncPlaying && !playerRef.current.isPlaying()) {
-                            console.log('▶️ Starting playback from sync');
                             playerRef.current.play();
                             setIsPlaying(true);
                         } else if (!syncPlaying && playerRef.current.isPlaying()) {
-                            console.log('⏸️ Pausing playback from sync');
                             playerRef.current.pause();
                             setIsPlaying(false);
                         } else {
-                            console.log('✅ Playback state already matches sync');
                             setIsPlaying(syncPlaying);
                         }
                     }, 100);
@@ -288,14 +256,13 @@ const ReviewSessionViewer = () => {
                 break;
 
             default:
-                console.log('❓ Unknown message type:', message.type);
+                console.log('Unknown message type:', message.type);
         }
     };
 
     const handlePlay = () => {
         if (playerRef.current && isConnected) {
             const timestamp = Math.floor(playerRef.current.getCurrentTime() * 1000);
-            console.log('▶️ Sending PLAY command:', { sessionId, timestamp });
 
             // Apply action locally immediately for responsiveness
             playerRef.current.play();
@@ -311,13 +278,10 @@ const ReviewSessionViewer = () => {
     const handlePause = () => {
         if (playerRef.current && isConnected) {
             const timestamp = Math.floor(playerRef.current.getCurrentTime() * 1000);
-            console.log('⏸️ Sending PAUSE command:', { sessionId, timestamp });
 
-            // Apply action locally immediately for responsiveness
             playerRef.current.pause();
             setIsPlaying(false);
 
-            // Send to other users via WebSocket
             webSocketService.sendPause(sessionId, timestamp);
         } else {
             console.warn('Cannot pause: player or WebSocket not ready');
@@ -331,13 +295,9 @@ const ReviewSessionViewer = () => {
             const newTime = pos * duration;
             const timestamp = Math.floor(newTime * 1000);
 
-            console.log('⏭️ Sending SEEK command:', { sessionId, timestamp, isPlaying });
-
-            // Apply action locally immediately for responsiveness
             playerRef.current.seekTo(newTime);
             setCurrentTime(newTime);
 
-            // Send to other users via WebSocket
             webSocketService.sendSeek(sessionId, timestamp, isPlaying);
         } else {
             console.warn('Cannot seek: player or WebSocket not ready');
@@ -407,7 +367,6 @@ const ReviewSessionViewer = () => {
         connectToWebSocket();
     };
 
-    // KEEP ALL YOUR EXISTING JSX RETURN BELOW - NO CHANGES NEEDED
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">

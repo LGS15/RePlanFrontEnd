@@ -186,8 +186,6 @@ const Footer = () => {
     );
 };
 
-// Main Landing Page
-// Main Landing Page
 const LandingPage = () => {
     return (
         <div className="bg-gray-900 text-white min-h-screen overflow-hidden">

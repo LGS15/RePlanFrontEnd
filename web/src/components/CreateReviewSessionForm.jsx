@@ -24,7 +24,6 @@ const CreateReviewSessionForm = ({ teamId, onSessionCreated }) => {
         }));
     };
 
-    // Validate YouTube URL
     const validateYouTubeUrl = (url) => {
         if (!url) return false;
 
@@ -36,7 +35,6 @@ const CreateReviewSessionForm = ({ teamId, onSessionCreated }) => {
         return youtubePatterns.some(pattern => pattern.test(url));
     };
 
-    // Extract video ID for preview
     const extractVideoId = (url) => {
         const patterns = [
             /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,

@@ -32,7 +32,6 @@ const CreateTeamForm = () => {
         setIsLoading(true);
 
         try {
-            // Use the currentUser ID as the ownerId
             const ownerId = currentUser?.userId;
 
             if (!ownerId) {
@@ -44,13 +43,12 @@ const CreateTeamForm = () => {
             setResult(createdTeam);
             setError(null);
 
-            // Navigate to the team page after a delay
             if (createdTeam && createdTeam.teamId) {
                 setTimeout(() => {
                     navigate(`/team/${createdTeam.teamId}`, {
                         state: { teamData: createdTeam }
                     });
-                }, 2000);
+                }, 1000);
             }
         } catch (err) {
             setError(err.response?.data?.message || 'There seems to have been an error. Please try again later.');

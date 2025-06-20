@@ -25,7 +25,6 @@ const TeamDashboard = () => {
             setMemberTeams(allUserTeams);
             setError(null);
         } catch (err) {
-            console.error('Error fetching teams:', err);
             setError('Error loading teams');
         } finally {
             setIsLoading(false);

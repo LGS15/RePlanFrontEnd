@@ -9,7 +9,6 @@ const NavBar = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        // Update auth status when currentUser changes
         setIsAuthenticated(!!currentUser);
     }, [currentUser]);
 
@@ -119,7 +118,7 @@ const NavBar = () => {
                 </div>
             </div>
 
-            {/* Mobile menu */}
+            {/* Mobil/Very Small Screen - whichever one basically */}
             {isMenuOpen && (
                 <div className="md:hidden bg-gray-800 shadow-md">
                     <div className="px-2 pt-2 pb-3 space-y-1">

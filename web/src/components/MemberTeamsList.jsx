@@ -10,14 +10,12 @@ const MemberTeamsList = () => {
     const [error, setError] = useState(null);
     const [expandedTeamId, setExpandedTeamId] = useState(null);
 
-    // Fetch teams when component mounts or currentUser changes
     const fetchTeams = async () => {
         if (!currentUser?.userId) return;
 
         setIsLoading(true);
         try {
             const teamsData = await getTeamsByUser(currentUser.userId);
-            // Filter out teams where the user is the owner (those are shown in OwnedTeamsList)
             const memberTeams = teamsData.filter(team => team.ownerId !== currentUser.userId);
             setTeams(memberTeams);
             setError(null);
@@ -34,7 +32,6 @@ const MemberTeamsList = () => {
         setExpandedTeamId(expandedTeamId === teamId ? null : teamId);
     };
 
-    // Fetch teams when currentUser changes
     useEffect(() => {
         if (currentUser?.userId) {
             fetchTeams();

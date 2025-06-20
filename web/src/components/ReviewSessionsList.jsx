@@ -49,7 +49,6 @@ const ReviewSessionsList = ({ teamId, team, onRefresh }) => {
             const result = await joinReviewSession(sessionId);
             setActionSuccess(`Successfully joined session: ${result.message}`);
 
-            // Navigate to the review session page
             navigate(`/review-session/${sessionId}`);
 
             navigate(0);
@@ -81,7 +80,6 @@ const ReviewSessionsList = ({ teamId, team, onRefresh }) => {
 
             setTimeout(() => setActionSuccess(null), 3000);
         } catch (err) {
-            console.error('Error ending session:', err);
             setError(err.response?.data?.message || 'Error ending session');
             setTimeout(() => setError(null), 3000);
         } finally {

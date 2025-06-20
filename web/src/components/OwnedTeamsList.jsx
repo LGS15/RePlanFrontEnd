@@ -13,7 +13,6 @@ const OwnedTeamsList = () => {
     const [deleteSuccess, setDeleteSuccess] = useState(false);
     const [deleteError, setDeleteError] = useState(null);
 
-    // Fetch teams when component mounts or currentUser changes
     const fetchTeams = async () => {
         if (!currentUser?.userId) return;
 
@@ -47,7 +46,6 @@ const OwnedTeamsList = () => {
         try {
             await deleteTeam(teamId);
 
-            // Remove the deleted team from the local state
             setTeams(prevTeams => prevTeams.filter(team => team.teamId !== teamId));
 
             setDeleteSuccess(true);
@@ -61,7 +59,6 @@ const OwnedTeamsList = () => {
         }
     };
 
-    // Fetch teams when currentUser changes
     useEffect(() => {
         if (currentUser?.userId) {
             fetchTeams();

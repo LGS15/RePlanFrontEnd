@@ -70,16 +70,17 @@ export const getAvailableFocuses = async () => {
 };
 
 /**
+ * @param {number} page
  * @param {number} limit
  * @returns {Promise<Array>}
  */
-export const getCurrentUserPracticeHistory = async (limit = 10) => {
+export const getCurrentUserPracticeHistory = async (page = 0, limit = 10) => {
     try {
         const headers = getAuthHeader();
         console.log('Fetching current user practice history with token:', headers.Authorization ? 'Token present' : 'No token');
 
         const response = await axios.get(`${API_URL}/practice-calculator/history`, {
-            params: { limit },
+            params: { page, limit },
             headers: {
                 ...headers,
                 'Content-Type': 'application/json'
@@ -98,16 +99,17 @@ export const getCurrentUserPracticeHistory = async (limit = 10) => {
 
 /**
  * @param {string} userId
+ * @param {number} page
  * @param {number} limit
  * @returns {Promise<Array>}
  */
-export const getUserPracticeHistory = async (userId, limit = 10) => {
+export const getUserPracticeHistory = async (userId, page = 0, limit = 10) => {
     try {
         const headers = getAuthHeader();
         console.log('Fetching user practice history with token:', headers.Authorization ? 'Token present' : 'No token');
 
         const response = await axios.get(`${API_URL}/practice-calculator/history/${userId}`, {
-            params: { limit },
+            params: { page, limit },
             headers: {
                 ...headers,
                 'Content-Type': 'application/json'
@@ -126,16 +128,17 @@ export const getUserPracticeHistory = async (userId, limit = 10) => {
 
 /**
  * @param {string} teamId
+ * @param {number} page
  * @param {number} limit
  * @returns {Promise<Array>}
  */
-export const getTeamPracticeHistory = async (teamId, limit = 10) => {
+export const getTeamPracticeHistory = async (teamId, page = 0, limit = 10) => {
     try {
         const headers = getAuthHeader();
         console.log('Fetching team practice history with token:', headers.Authorization ? 'Token present' : 'No token');
 
         const response = await axios.get(`${API_URL}/practice-calculator/team/${teamId}/history`, {
-            params: { limit },
+            params: { page, limit },
             headers: {
                 ...headers,
                 'Content-Type': 'application/json'
@@ -164,7 +167,6 @@ export const PRACTICE_FOCUS = {
     POST_PLANT_SCENARIOS: 'POST_PLANT_SCENARIOS',
     SITE_HOLDS: 'SITE_HOLDS'
 };
-
 
 export const PRACTICE_TYPE = {
     INDIVIDUAL: 'INDIVIDUAL',
