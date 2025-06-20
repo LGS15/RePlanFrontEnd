@@ -303,6 +303,14 @@ class WebSocketService {
         }
     }
 
+    sendLeave(sessionId) {
+        const sent = this.sendMessage(`/app/session/${sessionId}/leave`, {});
+
+        if (sent) {
+            console.log('🚪 Sent leave request:', { sessionId });
+        }
+    }
+
     isConnected() {
         return this.connected && this.client && this.client.connected && !this.isConnecting;
     }

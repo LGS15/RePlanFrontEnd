@@ -379,8 +379,17 @@ const ReviewSessionViewer = () => {
     const handleLeaveSession = async () => {
         if (confirm('Are you sure you want to leave this session?')) {
             try {
+                if (webSocketService.isConnected()) {
+                    webSocketService.sendLeave(sessionId);
+                    webSocketService.unsubscribeFromSession(sessionId);
+                }
                 await leaveReviewSession(sessionId);
-                navigate(-1);
+                webSocketService.disconnect();
+                if (session?.teamId) {
+                    navigate(`/team/${session.teamId}`);
+                } else {
+                    navigate(-1);
+                }
             } catch (err) {
                 console.error('Error leaving session:', err);
             }
