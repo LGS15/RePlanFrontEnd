@@ -18,7 +18,10 @@ describe('Team creation and deletion', () => {
         cy.clock()
         cy.visit('/team-management', {
             onBeforeLoad(win) {
-                win.localStorage.setItem('token', 'fake-token')
+                const token= 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+                    'eyJzdWIiOiIxMjMiLCJ1c2VybmFtZSI6InRlc3RlciIsImVtYWlsIjoidGVzdGVyQGV4YW1wbGUuY29tIiwiZXhwIjoyMDAwMDAwMDAwfQ==.' +
+                    'signature'
+                win.localStorage.setItem('token', token)
                 win.localStorage.setItem('userId', '123')
                 win.localStorage.setItem('username', 'tester')
                 win.localStorage.setItem('email', 'tester@example.com')
