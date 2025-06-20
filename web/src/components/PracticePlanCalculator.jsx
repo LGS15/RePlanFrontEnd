@@ -8,10 +8,15 @@ import {
 } from '../services/PracticeService.js';
 import { useAuth } from '../contexts/AuthContext';
 
-const PracticePlanCalculator = ({ selectedTeam = null }) => {
+const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }) => {
     const { currentUser } = useAuth();
+
+    // Determine practice type based on props
+    const initialPracticeType = forceIndividual ? PRACTICE_TYPE.INDIVIDUAL :
+        selectedTeam ? PRACTICE_TYPE.TEAM : PRACTICE_TYPE.INDIVIDUAL;
+
     const [formData, setFormData] = useState({
-        practiceType: PRACTICE_TYPE.INDIVIDUAL,
+        practiceType: initialPracticeType,
         focusAreas: [],
         availableHours: 2,
         teamId: selectedTeam?.teamId || ''
@@ -28,14 +33,14 @@ const PracticePlanCalculator = ({ selectedTeam = null }) => {
     }, []);
 
     useEffect(() => {
-        if (selectedTeam) {
+        if (selectedTeam && !forceIndividual) {
             setFormData(prev => ({
                 ...prev,
                 teamId: selectedTeam.teamId,
                 practiceType: PRACTICE_TYPE.TEAM
             }));
         }
-    }, [selectedTeam]);
+    }, [selectedTeam, forceIndividual]);
 
     const fetchAvailableFocuses = async () => {
         try {
@@ -126,68 +131,74 @@ const PracticePlanCalculator = ({ selectedTeam = null }) => {
         <div className="space-y-6">
             {/* Calculator Form */}
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                <h3 className="text-xl font-bold text-white mb-6">Practice Plan Calculator</h3>
+                <h3 className="text-xl font-bold text-white mb-6">
+                    {forceIndividual ? 'Individual Practice Plan Calculator' :
+                        selectedTeam ? `Team Practice Plan - ${selectedTeam.teamName}` :
+                            'Practice Plan Calculator'}
+                </h3>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Practice Type */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-3">
-                            Practice Type
-                        </label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
-                                formData.practiceType === PRACTICE_TYPE.INDIVIDUAL
-                                    ? 'border-pink-500 bg-pink-500/10'
-                                    : 'border-gray-600 hover:border-gray-500'
-                            }`}>
-                                <input
-                                    type="radio"
-                                    name="practiceType"
-                                    value={PRACTICE_TYPE.INDIVIDUAL}
-                                    checked={formData.practiceType === PRACTICE_TYPE.INDIVIDUAL}
-                                    onChange={handleInputChange}
-                                    className="sr-only"
-                                />
-                                <div className="flex items-center">
-                                    <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
-                                        formData.practiceType === PRACTICE_TYPE.INDIVIDUAL
-                                            ? 'border-pink-500 bg-pink-500'
-                                            : 'border-gray-400'
-                                    }`}></div>
-                                    <div>
-                                        <div className="font-medium text-white">Individual</div>
-                                        <div className="text-sm text-gray-400">Solo practice session</div>
-                                    </div>
-                                </div>
+                    {/* Practice Type - Only show if not forced to individual and no team selected */}
+                    {!forceIndividual && !selectedTeam && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-3">
+                                Practice Type
                             </label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
+                                    formData.practiceType === PRACTICE_TYPE.INDIVIDUAL
+                                        ? 'border-pink-500 bg-pink-500/10'
+                                        : 'border-gray-600 hover:border-gray-500'
+                                }`}>
+                                    <input
+                                        type="radio"
+                                        name="practiceType"
+                                        value={PRACTICE_TYPE.INDIVIDUAL}
+                                        checked={formData.practiceType === PRACTICE_TYPE.INDIVIDUAL}
+                                        onChange={handleInputChange}
+                                        className="sr-only"
+                                    />
+                                    <div className="flex items-center">
+                                        <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
+                                            formData.practiceType === PRACTICE_TYPE.INDIVIDUAL
+                                                ? 'border-pink-500 bg-pink-500'
+                                                : 'border-gray-400'
+                                        }`}></div>
+                                        <div>
+                                            <div className="font-medium text-white">Individual</div>
+                                            <div className="text-sm text-gray-400">Solo practice session</div>
+                                        </div>
+                                    </div>
+                                </label>
 
-                            <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
-                                formData.practiceType === PRACTICE_TYPE.TEAM
-                                    ? 'border-pink-500 bg-pink-500/10'
-                                    : 'border-gray-600 hover:border-gray-500'
-                            }`}>
-                                <input
-                                    type="radio"
-                                    name="practiceType"
-                                    value={PRACTICE_TYPE.TEAM}
-                                    checked={formData.practiceType === PRACTICE_TYPE.TEAM}
-                                    onChange={handleInputChange}
-                                    className="sr-only"
-                                />
-                                <div className="flex items-center">
-                                    <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
-                                        formData.practiceType === PRACTICE_TYPE.TEAM
-                                            ? 'border-pink-500 bg-pink-500'
-                                            : 'border-gray-400'
-                                    }`}></div>
-                                    <div>
-                                        <div className="font-medium text-white">Team</div>
-                                        <div className="text-sm text-gray-400">Group practice session</div>
+                                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
+                                    formData.practiceType === PRACTICE_TYPE.TEAM
+                                        ? 'border-pink-500 bg-pink-500/10'
+                                        : 'border-gray-600 hover:border-gray-500'
+                                }`}>
+                                    <input
+                                        type="radio"
+                                        name="practiceType"
+                                        value={PRACTICE_TYPE.TEAM}
+                                        checked={formData.practiceType === PRACTICE_TYPE.TEAM}
+                                        onChange={handleInputChange}
+                                        className="sr-only"
+                                    />
+                                    <div className="flex items-center">
+                                        <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
+                                            formData.practiceType === PRACTICE_TYPE.TEAM
+                                                ? 'border-pink-500 bg-pink-500'
+                                                : 'border-gray-400'
+                                        }`}></div>
+                                        <div>
+                                            <div className="font-medium text-white">Team</div>
+                                            <div className="text-sm text-gray-400">Group practice session</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </label>
+                                </label>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Available Hours */}
                     <div>
@@ -261,8 +272,8 @@ const PracticePlanCalculator = ({ selectedTeam = null }) => {
                         </p>
                     </div>
 
-                    {/* Team Selection (only for team practice) */}
-                    {formData.practiceType === PRACTICE_TYPE.TEAM && !selectedTeam && (
+                    {/* Team Selection (only for team practice when no team is selected) */}
+                    {formData.practiceType === PRACTICE_TYPE.TEAM && !selectedTeam && !forceIndividual && (
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">
                                 Team ID (Optional)
@@ -278,13 +289,21 @@ const PracticePlanCalculator = ({ selectedTeam = null }) => {
                         </div>
                     )}
 
-                    {/* Current User Info */}
+                    {/* Current Context Info */}
                     <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                         <div className="flex items-center space-x-3">
-                            <div className="bg-pink-600/20 p-2 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
+                            <div className={`p-2 rounded-full ${
+                                formData.practiceType === PRACTICE_TYPE.TEAM ? 'bg-blue-600/20' : 'bg-pink-600/20'
+                            }`}>
+                                {formData.practiceType === PRACTICE_TYPE.TEAM ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                )}
                             </div>
                             <div>
                                 <p className="text-sm text-gray-300">

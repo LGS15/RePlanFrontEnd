@@ -4,6 +4,8 @@ import {addTeamMember, getTeamMembers, removeTeamMember} from '../services/TeamS
 import { useAuth } from '../contexts/AuthContext';
 import CreateReviewSessionForm from '../components/CreateReviewSessionForm.jsx';
 import ReviewSessionsList from '../components/ReviewSessionsList.jsx';
+import PracticePlanCalculator from '../components/PracticePlanCalculator.jsx';
+
 
 const TeamPage = () => {
     const { teamId } = useParams();
@@ -13,6 +15,7 @@ const TeamPage = () => {
 
     const [team] = useState(teamDataFromState || null);
     const [activeTab, setActiveTab] = useState('overview');
+    const [activePracticeTab, setActivePracticeTab] = useState('calculator');
     const [email, setEmail] = useState('');
     const [role, setRole] = useState('PLAYER');
     const [isAdding, setIsAdding] = useState(false);
@@ -175,6 +178,16 @@ const TeamPage = () => {
                             Members ({members.length})
                         </button>
                         <button
+                            onClick={() => setActiveTab('practice')}
+                            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                                activeTab === 'practice'
+                                    ? 'border-pink-500 text-pink-400'
+                                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                            }`}
+                        >
+                            Practice Plans
+                        </button>
+                        <button
                             onClick={() => setActiveTab('sessions')}
                             className={`py-4 px-1 border-b-2 font-medium text-sm ${
                                 activeTab === 'sessions'
@@ -249,6 +262,12 @@ const TeamPage = () => {
                                 <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
                                 <div className="space-y-3">
                                     <button
+                                        onClick={() => setActiveTab('practice')}
+                                        className="w-full px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition duration-200"
+                                    >
+                                        Create Practice Plan
+                                    </button>
+                                    <button
                                         onClick={() => setActiveTab('create-session')}
                                         className="w-full px-4 py-2 bg-pink-600 text-white text-sm rounded-lg hover:bg-pink-700 transition duration-200"
                                     >
@@ -256,7 +275,7 @@ const TeamPage = () => {
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('sessions')}
-                                        className="w-full px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition duration-200"
+                                        className="w-full px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition duration-200"
                                     >
                                         View Active Sessions
                                     </button>
@@ -274,7 +293,7 @@ const TeamPage = () => {
                                 <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
                                 <div className="text-sm text-gray-400">
                                     <p>No recent activity to display.</p>
-                                    <p className="mt-2">Create a review session to get started!</p>
+                                    <p className="mt-2">Create practice plans and review sessions to get started!</p>
                                 </div>
                             </div>
                         </div>
@@ -294,7 +313,7 @@ const TeamPage = () => {
                                             <div className="flex justify-center py-8">
                                                 <svg className="animate-spin h-8 w-8 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                 </svg>
                                             </div>
                                         ) : members && members.length > 0 ? (
@@ -403,7 +422,7 @@ const TeamPage = () => {
                                                     <span className="flex items-center justify-center">
                                                         <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                         </svg>
                                                         Adding...
                                                     </span>
@@ -424,6 +443,57 @@ const TeamPage = () => {
                                         </form>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Practice Plans Tab */}
+                    {activeTab === 'practice' && (
+                        <div>
+                            {/* Sub-tabs for Practice */}
+                            <div className="mb-6 border-b border-gray-700">
+                                <nav className="flex space-x-6">
+                                    <button
+                                        onClick={() => setActivePracticeTab('calculator')}
+                                        className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                                            activePracticeTab === 'calculator'
+                                                ? 'border-blue-500 text-blue-400'
+                                                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 002 2v14a2 2 0 002 2z" />
+                                            </svg>
+                                            <span>Create Team Practice Plan</span>
+                                        </div>
+                                    </button>
+                                    <button
+                                        onClick={() => setActivePracticeTab('history')}
+                                        className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                                            activePracticeTab === 'history'
+                                                ? 'border-blue-500 text-blue-400'
+                                                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span>Team Practice History</span>
+                                        </div>
+                                    </button>
+                                </nav>
+                            </div>
+
+                            {/* Practice Tab Content */}
+                            <div>
+                                {activePracticeTab === 'calculator' && (
+                                    <PracticePlanCalculator selectedTeam={team} />
+                                )}
+                                {activePracticeTab === 'history' && (
+                                    <TeamPracticeHistory teamId={teamId} teamName={team.teamName} />
+                                )}
                             </div>
                         </div>
                     )}
