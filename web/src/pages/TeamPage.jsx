@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import CreateReviewSessionForm from '../components/CreateReviewSessionForm.jsx';
 import ReviewSessionsList from '../components/ReviewSessionsList.jsx';
 import PracticePlanCalculator from '../components/PracticePlanCalculator.jsx';
+import PracticeHistory from '../components/PracticeHistory.jsx';
 
 
 const TeamPage = () => {
@@ -492,7 +493,7 @@ const TeamPage = () => {
                                     <PracticePlanCalculator selectedTeam={team} />
                                 )}
                                 {activePracticeTab === 'history' && (
-                                    <TeamPracticeHistory teamId={teamId} teamName={team.teamName} />
+                                    <PracticeHistory selectedTeam={team} />
                                 )}
                             </div>
                         </div>

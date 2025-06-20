@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { getCurrentUserPracticeHistory, formatPracticeDuration } from '../services/PracticeService.js';
+import {
+    getCurrentUserPracticeHistory,
+    getTeamPracticeHistory,
+    formatPracticeDuration
+} from '../services/PracticeService.js';
 import { useAuth } from '../contexts/AuthContext';
 
-const PracticeHistory = () => {
+const PracticeHistory = ({ selectedTeam = null, forceIndividual = false }) => {
     const { currentUser } = useAuth();
     const [history, setHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -11,12 +15,17 @@ const PracticeHistory = () => {
 
     useEffect(() => {
         fetchPracticeHistory();
-    }, []);
+    }, [selectedTeam, forceIndividual]);
 
     const fetchPracticeHistory = async () => {
         try {
             setIsLoading(true);
-            const historyData = await getCurrentUserPracticeHistory(20);
+            let historyData;
+            if (selectedTeam && !forceIndividual) {
+                historyData = await getTeamPracticeHistory(selectedTeam.teamId, 20);
+            } else {
+                historyData = await getCurrentUserPracticeHistory(20);
+            }
             setHistory(historyData);
             setError(null);
         } catch (err) {
@@ -74,7 +83,9 @@ const PracticeHistory = () => {
     return (
         <div className="bg-gray-800 rounded-lg border border-gray-700">
             <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-white">Practice History</h3>
+                <h3 className="text-xl font-bold text-white">
+                    {selectedTeam && !forceIndividual ? `Practice History - ${selectedTeam.teamName}` : 'Practice History'}
+                </h3>
                 <button
                     onClick={fetchPracticeHistory}
                     disabled={isLoading}
@@ -213,7 +224,9 @@ const PracticeHistory = () => {
                         <svg className="mx-auto h-12 w-12 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                         </svg>
-                        <h3 className="text-lg font-medium text-white mb-2">No Practice Plans Yet</h3>
+                        <h3 className="text-lg font-medium text-white mb-2">
+                            {selectedTeam && !forceIndividual ? 'No Team Practice Plans Yet' : 'No Practice Plans Yet'}
+                        </h3>
                         <p className="text-sm">Generate your first practice plan to see it here.</p>
                     </div>
                 )}
