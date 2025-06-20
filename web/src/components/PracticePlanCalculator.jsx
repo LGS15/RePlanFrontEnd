@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     calculatePracticeAllocation,
     getAvailableFocuses,
+    getPopularCombinations,
     validatePracticeRequest,
     formatPracticeDuration,
     PRACTICE_TYPE
@@ -23,6 +24,7 @@ const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }
     });
 
     const [availableFocuses, setAvailableFocuses] = useState([]);
+    const [popularCombinations, setPopularCombinations] = useState(null);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +32,7 @@ const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }
 
     useEffect(() => {
         fetchAvailableFocuses();
+        fetchPopularCombinations();
     }, []);
 
     useEffect(() => {
@@ -54,6 +57,16 @@ const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }
         }
     };
 
+    const fetchPopularCombinations = async () => {
+        try {
+            const combinations = await getPopularCombinations();
+            setPopularCombinations(combinations);
+        } catch (err) {
+            console.error('Error fetching popular combinations:', err);
+            // Don't set error since this is not critical
+        }
+    };
+
     const handleInputChange = (e) => {
         const { name, value, type } = e.target;
         setFormData(prev => ({
@@ -73,6 +86,21 @@ const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }
                 focusAreas: newFocusAreas.slice(0, 3) // Limit to 3 focus areas
             };
         });
+    };
+
+    const handleUsePopularCombination = () => {
+        if (!popularCombinations) return;
+
+        const currentPopular = formData.practiceType === PRACTICE_TYPE.INDIVIDUAL
+            ? popularCombinations.individual
+            : popularCombinations.team;
+
+        if (currentPopular && currentPopular.focuses && currentPopular.focuses.length > 0) {
+            setFormData(prev => ({
+                ...prev,
+                focusAreas: currentPopular.focuses.map(focus => focus.name || focus)
+            }));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -114,6 +142,14 @@ const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }
         return focus ? focus.displayName : focusValue;
     };
 
+    const getCurrentPopularCombination = () => {
+        if (!popularCombinations) return null;
+
+        return formData.practiceType === PRACTICE_TYPE.INDIVIDUAL
+            ? popularCombinations.individual
+            : popularCombinations.team;
+    };
+
     if (isLoadingFocuses) {
         return (
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
@@ -127,6 +163,8 @@ const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }
         );
     }
 
+    const currentPopular = getCurrentPopularCombination();
+
     return (
         <div className="space-y-6">
             {/* Calculator Form */}
@@ -136,6 +174,46 @@ const PracticePlanCalculator = ({ selectedTeam = null, forceIndividual = false }
                         selectedTeam ? `Team Practice Plan - ${selectedTeam.teamName}` :
                             'Practice Plan Calculator'}
                 </h3>
+
+                {/* Popular Combination Display */}
+                {currentPopular && currentPopular.count > 0 && (
+                    <div className="mb-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                                <h4 className="text-blue-300 font-medium">
+                                    Most Popular {formData.practiceType === PRACTICE_TYPE.INDIVIDUAL ? 'Individual' : 'Team'} Combination
+                                </h4>
+                            </div>
+                            <span className="text-xs text-blue-400 bg-blue-900/30 px-2 py-1 rounded-full">
+                                {currentPopular.count} uses
+                            </span>
+                        </div>
+
+                        {currentPopular.focuses && currentPopular.focuses.length > 0 ? (
+                            <div className="space-y-3">
+                                <div className="flex flex-wrap gap-2">
+                                    {currentPopular.focuses.map((focus, index) => (
+                                        <span key={index} className="px-3 py-1 bg-blue-600/30 text-blue-200 text-sm rounded-full border border-blue-500/30">
+                                            {getFocusDisplayName(focus.name || focus)}
+                                        </span>
+                                    ))}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleUsePopularCombination}
+                                    className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200"
+                                >
+                                    Use This Combination
+                                </button>
+                            </div>
+                        ) : (
+                            <p className="text-blue-300 text-sm">No popular combination data available yet.</p>
+                        )}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Practice Type - Only show if not forced to individual and no team selected */}
